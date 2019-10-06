@@ -4,7 +4,8 @@
  * Make sure the clock speed is 8 MHz! Otherwise
  * serial communication will not work. 
  *
- * This code 
+ * This code has only been tested with the ATmega328P
+ * but should also work with the 644 
  */ 
 
 #include <avr/io.h>
