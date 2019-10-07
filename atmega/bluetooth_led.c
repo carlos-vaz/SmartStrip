@@ -1,10 +1,10 @@
-/* Collects samples out of ADC onto an array 
- * and sends the array over serial. 
- *
+/* Interfaces with the AT-09 Serial Bluetooth Module
+ * and responds to LED off/on/toggle commands from 
+ * a Bluetooth master. 
+ * 
  * Make sure the clock speed is 8 MHz! Otherwise
  * serial communication will not work. 
  *
- * This code 
  */ 
 
 #include <avr/io.h>
