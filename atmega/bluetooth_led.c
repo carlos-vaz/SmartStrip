@@ -4,8 +4,7 @@
  * Make sure the clock speed is 8 MHz! Otherwise
  * serial communication will not work. 
  *
- * This code has only been tested with the ATmega328P
- * but should also work with the 644 
+ * This code 
  */ 
 
 #include <avr/io.h>
@@ -19,12 +18,15 @@
 
 #define BAUDCOUNTER 51
 
-uint16_t sampleADC();
 void UART_Init(unsigned int ubrr);
 void Serial_Send(char string[]);
 void int2str(uint16_t, char*);
 void UART_TX(unsigned char data);
+int Serial_Available();
 unsigned char UART_RX(void);
+int equals(char a[], const char b[]);
+
+char btCommand[50];
 
 int main(void)
 {
@@ -34,39 +36,50 @@ int main(void)
 	// Setup UART
 	UART_Init(BAUDCOUNTER);
 
-	// Setup ADC
-	ADCSRA = 1<<ADEN | 1<<ADPS2|1<<ADPS1|1<<ADPS0; // 0b10000111 // Set  ADC Enable bit (7) in ADCSRA register, and set ADC prescaler to 128
-	ADMUX = 0<<REFS1|1<<REFS0|0<<ADLAR; // 0b01000000  // AVCC with external capacitor at AREF pin + use ADC0 + use right justify
-
 	_delay_ms(1000);
-	Serial_Send("Ready to rumble...\n");
+	PORTB = 0b00000001; // led on
 
-	while (1)
+	// Configure AT-09 BT Module
+	Serial_Send("AT+ROLE0\r\n");		// Role = peripheral (responds)
+	_delay_ms(100);	
+	Serial_Send("AT+UUID0xFFE0\r\n");	// Set UUID for service (phone looks for this)
+	_delay_ms(100);	
+	Serial_Send("AT+CHAR0xFFE1\r\n");	// Set UUID for characteristic (phone looks for this)
+	_delay_ms(100);	
+	Serial_Send("AT+NAMESmartStrip\r\n");	// ame that shows up on phone scan
+	_delay_ms(100);	
+
+
+	while(1)
 	{
-		uint16_t val = sampleADC();
-		//uint16_t val = 65535; 
-		char valString[5];
-		int2str(val, valString);
-		Serial_Send("val = ");
-		Serial_Send(valString);
-		Serial_Send("\n");
+		while(!Serial_Available()); // wait for message
 
-		PORTB = PORTB ^ 0b00000001; // toggle LED
-		//_delay_ms(50); 
+		int i = 0;
+		while(Serial_Available())
+		{
+			btCommand[i++] = UART_RX();
+			_delay_ms(10);
+		}
+		btCommand[i] = 0;
+
+		Serial_Send("**");
+		Serial_Send(btCommand);
+		Serial_Send("**");
+
+		if(equals(btCommand, "off")) {
+			PORTB = 0b00000000; // LED off
+		}
+
+		else if(equals(btCommand, "on")) {
+			PORTB = 0b00000001; // LED on
+		}
+
+		else if(equals(btCommand, "tog")) {
+			PORTB ^= 0b00000001; // LED toggle
+		}
 	}
 
 	return 0;
-}
-
-uint16_t sampleADC()
-{
-	ADCSRA|=(1<<ADSC); // Start conversion 
-	while ((ADCSRA & (1<<ADIF))==0); // wait for completion
-	unsigned char Current2 = ADCL;
-	unsigned char Current1 = ADCH;
-	uint16_t Current = (Current1<<8)|Current2;
-	Current = Current & 0x3FF;
-	return Current;
 }
 
 void int2str(uint16_t val, char* str)
@@ -86,8 +99,9 @@ void UART_Init(unsigned int ubrr)
 	UBRR0L = (unsigned char)ubrr;
 	// Enable receiver/transmitter
 	UCSR0B = (1<<RXEN0) | (1<<TXEN0);
-	// Set frame format: 8 data + 2 stop bits
-	UCSR0C = (1<<USBS0) | (3<<UCSZ00);
+	// Set frame format: 8 data + 1 stop bit
+	UCSR0C = (3<<UCSZ00);
+	//UCSR0C |= (1<<USBS0); // 2 stop bits
 }
 
 void Serial_Send(char data[])
@@ -109,6 +123,11 @@ void UART_TX(unsigned char data)
 	UDR0 = data;
 }
 
+int Serial_Available()
+{
+	return ( (UCSR0A & (1<<RXC0)) == 1<<RXC0) ? 1 : 0;
+}
+
 unsigned char UART_RX(void)
 {
 	// Wait for data to be available
@@ -118,4 +137,14 @@ unsigned char UART_RX(void)
 	return UDR0;
 }
 
+int equals(char a[], const char b[]) {
+	int i = 0;
+	while(1) {
+		if(a[i] != b[i] || i > 256) 
+			return 0;
+		if(a[i] == '\0')
+			return 1;
+		i++;
+	}
+}
 
