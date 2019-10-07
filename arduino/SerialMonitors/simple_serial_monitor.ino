@@ -1,8 +1,6 @@
 /*
- * A simple program that reads from the ATmega serial
- * TX pin and relays it to the RX pin of the Serial-USB
- * adapter on the Arduino so that your computer can read
- * the values. 
+ * A simple program that monitors serial transmissions
+ * on pin 2 and outputs them onto your computer terminal.
  */
 
 #include <SoftwareSerial.h>
