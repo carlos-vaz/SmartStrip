@@ -102,7 +102,7 @@ int main(void)
 				/*Device record teach-in sample*/
 				case 2 {
 					
-					/*Send device and state (off/on sample) to recordTeachIn – returns updated on/off sample counts, 
+					/*Send device and state (off/on sample) to recordTeachIn â€“ returns updated on/off sample counts, 
 					status of device (enough samples for auto control), sample status (good/bad), and updated device threshold*/
 					[oncount(device), offcount(device), status(device), sampStatus, threshold(device)] = recordTeachIn(device, state)
 				}
@@ -311,36 +311,37 @@ int allOn() {
 /*Get filtered current sample from selected device*/
 int getSample(device){
 	
-	int rawData[1500] = 0;
-	int filtData[1500] = 0;
-	int peaks[25] = 0;
+	int rawData[256] = 0;
+	int peaks[10] = 0;
 	int peakCount = 1;
 
 	/*Filtering sliding window width*/
 	int filtFactor = 5;
 	
 	/*Sample device CS at 3kHz for 0.5s*/
-	for i=1:1:1500 {
+	for i=1:1:256 {
 		
 		rawData(i) = ADCRead(device);
 		
-	
-		
-		sleep(5);
-		
-	}
-
-	/*Remove negative currents (LT 512), normalize all currents to 0-512, and filter current data using sliding window of length filtFactor*/
-	for i = filtFactor:1:1500 {
-
+		/*Make all samples positive (512-1024)*/
 		if (rawData(i)<512) {
-			rawData(i) = 512;
+			rawData(i) = rawData(i)+(2*(512-rawData(i)));
 		}
+		
+		/*Normalize to 0-512*/
 		rawData(i) = rawData(i) - 512;
-
-		filtData(i) = mean(rawData((i-filtFactor):i));
-
+		
+		if (i>=(filtFactor-1)) {
+			
+			/*Overwrite raw data array with filtered data */
+			rawData(i-filtFactor) = mean(rawData((i-filtFactor):i));
+		}
+		
+		sleep(x);
+		
 	}
+
+
 
 	/*Find peaks in sample array - move through array, find elements that end a zeros (previously negative section), then find max. values between each zeros section*/
 
