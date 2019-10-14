@@ -1,19 +1,25 @@
 /*
- * Copyright, SmartStrip Enterprises.
+ * Copyright
+ * SmartStrip Holdings Inc.
  *
- * Created: 10/9/2019 11:16:58 AM
+ * Created: 10/9/2019 11:16:58:098922 AM, EASTERN STANDARD (NY)
  * Author : ngh9
  */ 
 
 #include <avr/io.h>
+#include <avr/interrupt.h>
 #include <util/delay.h>
 #include <math.h>
 
+// Capture/control functions
 int getSample(int);
 void allOn();
 void manualControl(int device, uint8_t en, uint8_t on);
 void recordTeachIn(int device, int state);
 void teachInToggle(int device);
+
+// Bluetooth/Serial functions
+
 
 typedef struct {
 	// EEPROM state - training variables
@@ -51,6 +57,10 @@ int main(void)
 {
 
 	/*Load state from EEPROM*/
+	cli();	// disable interrupts to avoid corruption
+	sei();	// re-enable interrupts
+	
+	
 	
 	/*BLE Setup Stuff*/
 	BLEConnection = 1;
@@ -175,8 +185,8 @@ void allOn() {
 int getSample(int device){
 	
 	int rawData[256];
-	int peaks[10];
-	int peakCount = 1;
+	//int peaks[10];
+	//int peakCount = 1;
 	int sumStore = 0;
 	
 	//Counter variables
