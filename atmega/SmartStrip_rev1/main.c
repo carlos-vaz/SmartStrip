@@ -16,7 +16,7 @@ int getSample(int);
 void allOn();
 void manualControl(int device, uint8_t en, uint8_t on);
 void recordTeachIn(int device, int state);
-int teachInToggle(int device);
+void teachInToggle(int device);
 
 typedef struct {
 	// EEPROM state - training variables
@@ -120,7 +120,7 @@ int main(void)
 
 
 /*Toggle teach-in mode of selected outlet*/
-int teachInToggle(int device) {
+void teachInToggle(int device) {
 	teachIn ^= (1<<device);
 }
 
