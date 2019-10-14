@@ -29,15 +29,16 @@ typedef struct {
 
 	// EEPROM state - control variables
 	uint8_t outlet;
+	uint8_t algo_enable;
 	uint8_t manual_enable;
 	uint8_t manual_value;
 } device_t;
 
 device_t Devices[6];			// Device EEPROM states 
 	
-char relayState[6] = {0,0,0,0,0,0};
+char relayState;
 
-char teachIn[6] = {0,0,0,0,0,0};	//Teach-in enable(1)/disable(0)
+char teachIn;	//Teach-in enable(1)/disable(0)
 
 #define LOOP_COUNT_SHUTOFF 100
 
@@ -94,10 +95,11 @@ int main(void)
 		else {
 			
 			char update_mask = 0;
+			int i;
 			for(i=0; i<6; i++) {
 				if (relayState & (1<<i)) {
-					sample = getSample(i);
-					if (sample < Devices[i].threshold && control & (1<<i)) {
+					uint16_t sample = getSample(i);
+					if (sample < Devices[i].threshold && Devices[i].algo_enable==1) {
 						update_mask |= (1<<i);
 					}
 				}
@@ -126,14 +128,13 @@ int teachInToggle(int device) {
 void recordTeachIn(int device, int state) {
 	
 	int sample = getSample(device);
-	int sampStatus = 1;
 	
 	/*OFF sample*/
 	if (state == 0) {
 		/*If sample is LT all ON samples, update threshold and offCount*/
 		if (sample < Devices[device].minOn) {
 			Devices[device].offCount++;
-			Devices[device].threshold += (float)(sample*Devices[devices].offCount-1)/Devices[devices].offCount;
+			Devices[device].threshold += (float)(sample*Devices[device].offCount-1)/Devices[device].offCount;
 		}
 	}
 
@@ -142,7 +143,7 @@ void recordTeachIn(int device, int state) {
 		/*If sample is GT all OFF samples, update threshold and onCount*/
 		if (sample > Devices[device].maxOff) {
 			Devices[device].onCount++;
-			Devices[device].threshold += (float)(sample*Devices[devices].onCount-1)/Devices[devices].onCount;
+			Devices[device].threshold += (float)(sample*Devices[device].onCount-1)/Devices[device].onCount;
 		}
 	}
 
@@ -195,15 +196,15 @@ int getSample(int device){
 		/*
 		rawData[i] = ADCRead(device);
 		*/
-		
+
 		/*Make all samples positive (512-1024)*/
 		if (rawData[i]<512) {
 			rawData[i] = rawData[i]+(2*(512-rawData[i]));
 		}
-			
+
 		/*Normalize to 0-512*/
 		rawData[i] = rawData[i] - 512;
-			
+
 		if (i>=(filtFactor-1)) {
 			
 			sumStore = 0;
@@ -218,7 +219,7 @@ int getSample(int device){
 			
 			rawData[i-filtFactor] = sumStore/filtFactor;	
 	
-		}		
+		}
 	
 		_delay_ms(5);
 		
@@ -231,8 +232,7 @@ int getSample(int device){
 
 	/*Average peaks to get sample*/
 	
-
-	return sample;
+	return 0;
 
 }
 
