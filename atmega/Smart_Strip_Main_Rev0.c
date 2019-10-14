@@ -12,49 +12,36 @@
 #include <stdlib.h>
 
 
+typedef struct {
+	// EEPROM state - training variables
+	uint16_t threshold;
+	uint16_t minOn;		// Lowest ON example value
+	uint16_t maxOff;
+	uint16_t numOn;		// Num ON examples
+	uint16_t numOff;
+	uint16_t suff_ex;	// sufficient examples
+
+	// EEPROM state - control variables
+	uint8_t outlet;
+	uint8_t manual_enable;
+	uint8_t manual_value;
+} device_t;
+
 /* SETUP - All defined variables are global */
 	
 	/*Define variables for outlet/device status*/
 		/*%Relay status*/
-		char relayState[6];
+		char relayState[6] = {0,0,0,0,0,0};
 
 		/*Teach-in enable(1)/disable(0)*/
-		char teachIn[6];
-
-		/*Algorithm control enable(1)/disable(0)*/
-		char control[6];
-
-	/*Define variables for device current data*/
-		/*Number of "off" samples saved*/
-		int offcount[6];
-
-		/*Number of "on" samples saved*/
-		int oncount[6];
-
-		/*Device status indicates whether enough on/off samples have been recorded to allow device algorithm control*/
-		int status[6];
-
-		/*Define 3-dimensional array for current data: device(6) x state(2) x sample(100)*/
-		/*6 devices, each device has on and off samples, each device can have up to 100 (could change this) on and off samples*/
-		int currentdata[6][2][100];
+		char teachIn[6] = {0,0,0,0,0,0};
 
 		/*On/off current thresholds*/
-		int threshold[6];
-			
-	/*Generic counter, tracking variables that will be overwritten*/
-	int sampStatus;
-		
-	int i;
-	int device;
-	int state;
-	int sample;
+		device_t Devices[6];
+
 	int all_on_iter = 0; // counts the loop iterations to determine when to shut off relays (after allOn())
 	#define LOOP_COUNT_SHUTOFF 100
 	
-
-	/*Run startup diagnostics*/
-	int statusSensors = startupCheckSensors();
-
 	/*Variables for BLE Status*/
 		/*BLE Connected*/
 		int BLEConnection;	
@@ -66,7 +53,9 @@
 		int allOnPeriod;
 
 int main(void)
-{	
+{
+
+	/*Load state from EEPROM*/
 	
 	/*BLE Setup Stuff*/
 	
@@ -74,13 +63,6 @@ int main(void)
 	/* LOOP */
 	while (1) 
 	{
-		
-		
-		/*If no BLE connection, poll for BLE connection*/
-		if (BLEConnection == 0) {
-			// Try to connect
-		}
-
 		/*Check Bluetooth Message Buffer*/
 		
 
@@ -116,8 +98,8 @@ int main(void)
 			char update_mask = 0;
 			for(i=0; i<6; i++) {
 				if (relayState & (1<<i)) {
-					sample = getSample[i];
-					if (sample < threshold[i] && control & (1<<i)) {
+					sample = getSample(i);
+					if (sample < Devices[i].threshold && control & (1<<i)) {
 						update_mask |= (1<<i);
 					}
 				}
@@ -137,77 +119,56 @@ int main(void)
 /* FUNCTIONS */
 
 
-/*Check sensors at microcontroller startup*/
-int startupCheckSensors() {
-	
-	int OK = 1;
-
-	for (int i=0; i<6; i++) {
-		if (ADCInput(i) <2.4 || ADCInput(i) > 2.6) {
-			OK = 0;
-			break;
-		}
-	}
-	return OK;
-}
-
-
-
 /*Toggle teach-in mode of selected outlet*/
-int teachInToggle(device) {
-
-	teachIn(device) = ~teachIn(device);
-
+int teachInToggle(int device) {
+	teachIn ^= (1<<device);
 }
-
-
 
 /*Take sample, classify, refresh threshold, and update counts*/
-int recordTeachIn(device, state) {
+int recordTeachIn(int device, int state) {
 	
-	sample = getSample(device);
+	int sample = getSample(device);
+	int sampStatus = 1;
 	
 	/*Off sample*/
 	if (state == 0) {
-		/*Check sample is LT all on samples*/
-		sampStatus = 1;
-
-		for i = 1:1:oncount(device) {
-			if (sample >= currentdata(device, 0, i)) {
+		/*Check sample is LT all ON samples*/
+		int i;
+		for(i=0; i<oncount[device]; i++) {
+			if (sample >= currentdata[device][0][i]) {
 				sampStatus = 0;
-				break
+				break;
 			}
 		}
 
 		/*If sample good, add to device's off sample library and update count*/
 		if (sampStatus == 1){
-			currentdata(device, 0, offcount(device)+1) = sample;
-			offcount(device)++;
+			currentdata[device][0][offcount[device]+1] = sample;
+			offcount[device]++;
 		}
 	}
 
 	/*On sample*/
 	else {
-		/*Check sample is GT all off samples*/
-		sampStatus = 1;
+		/*Check sample is GT all OFF samples*/
 
-		for i = 1:1:offcount(device) {
-			if (sample <= currentdata(device, 1, i)) {
+		for(i=0; i<offcount[device]; i++) {
+			if (sample <= currentdata[device][1][i]) {
 				sampStatus = 0;
-				break
+				break;
 			}
 		}
 
 		/*If sample good, add to device's on sample library and update count*/
 		if (sampStatus == 1){
-			currentdata(device, 1, oncount(device)+1) = sample;
-			oncount(device)++;
+			currentdata[device][0][oncount[device]+1] = sample;
+			oncount[device]++;
 		}
 	}
 
 
 	/*Check device status - if device has at least 3 off and 3 on samples, status = 1*/
-	if (status(device)==0 && sampStatus==1){
+	if (status[device]==0 && sampStatus==1){
 		if ((offcount(device)>=3) && (oncount(device)>=3)) {
 			status(device) = 1;
 		}
@@ -215,7 +176,7 @@ int recordTeachIn(device, state) {
 
 	/*Update threshold*/
 	if (status(device)==1 && sampStatus==1) {
-		threshold(device) = avg([avg(currentdata(device, 1, (0:oncount(device))), mean(currentdata(device, 0, (0:offcount(device)))]);
+		threshold(device) = avg([avg(currentdata(device, 1, (0:oncount(device))), mean(currentdata(device, 0, (0:offcount(device))));
 	}
 
 	return oncount(device), offcount(device), status(device), sampStatus, threshold(device)
@@ -223,23 +184,24 @@ int recordTeachIn(device, state) {
 }
 
 
-
 /*Enable/disable algorithm outlet control*/
-int controlEnable(device) {
-
-	control(device) = ~control(device);
-
+void controlEnable(int device, int enable) {
+	char mask = (1<<device);
+	if(on==1)
+		control |= mask;
+	else
+		control &= ~mask;
 }
-
 
 
 /*Manual control of devices*/
-int manualControl(device) {
-
-	relayState(device) = ~relayState(device);
-
+void manualControl(int device, int on) {
+	char mask = (1<<device);
+	if(on==1)
+		relayState |= mask;
+	else
+		relayState &= ~mask;
 }
-
 
 /*Function to close all relays in AUTO*/
 void allOn() {
