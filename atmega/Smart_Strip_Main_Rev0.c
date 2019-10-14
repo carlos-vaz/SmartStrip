@@ -6,6 +6,7 @@
  */ 
 
 #include <avr/io.h>
+#include <util/delay.h>
 #include <math.h>
 #include <stdbool.h>
 #include <unistd.h>
@@ -48,6 +49,8 @@
 	int device;
 	int state;
 	int sample;
+	int all_on_iter = 0; // counts the loop iterations to determine when to shut off relays (after allOn())
+	#define LOOP_COUNT_SHUTOFF 100
 	
 
 	/*Run startup diagnostics*/
@@ -71,12 +74,11 @@ int main(void)
 {	
 	
 	/*BLE Setup Stuff*/
-		
-
 	
-    /* LOOP */
-    while (1) 
-    {
+
+	/* LOOP */
+	while (1) 
+	{
 		
 		
 		/*If no BLE connection, poll for BLE connection*/
@@ -84,65 +86,35 @@ int main(void)
 			// Try to connect
 		}
 
-		/*Otherwise, check BLE inbox*/
-		else {
-			/*If message received in BLE inbox, process message*/
-			switch(BLEMessage) {
-
-				/*Device teach-in toggle*/
-				case 1 {
-					
-					/*Send device number to teachInToggle to toggle teach-in mode of selected device*/
-					teachInToggle(device)
-				}
-				
-				/*Device record teach-in sample*/
-				case 2 {
-					
-					/*Send device and state (off/on sample) to recordTeachIn – returns updated on/off sample counts, 
-					status of device (enough samples for auto control), sample status (good/bad), and updated device threshold*/
-					[oncount(device), offcount(device), status(device), sampStatus, threshold(device)] = recordTeachIn(device, state)
-				}
-
-				/*Device control enable/disable*/
-				case 3 {
-
-					/*Send device and to controlEnable to toggle algorithm/manual control of outlet*/
-					controlEnable(device);
-				}
-
-				/*Device manual off/on*/
-				case 4 {
-
-					/*Send device to manualControl to toggle outlet relays*/
-					manualControl(device, state);
-				}
-			}
-		}
+		/*Check Bluetooth Message Buffer*/
+		
 
 		/*Get RSSI strength and set trigger if necessary*/
-			/*Update last with now*/
-			rssiLast = rssiNow;
-		
-			/*Get new RSSI Strength*/
-			rssiNow = getRSSI();
-		
-			/*Set trigger on rising edge over threshold*/
-			if (rssiNow >= rssiThresh) && (rssiLast < rssiThresh) {
-				rssiTrig = 1;
+		if (BLEConnection==0 && rssiTrig==0) {
+			// Send AT+RSSI to BT module and read response
+		}
+
+
+		/*If RSSI causes a trigger, activate all relays temporarily*/
+		if (rssiTrig) {
+			if(all_on_iter == 0) {
+			// Start of "All On" period
+				allOn();
+			}
+			
+			if(all_on_iter == LOOP_COUNT_SHUTOFF) {
+			// End of "All On" period
+				all_on_iter = 0;
+				rssiTrig = 0;
+				allResume();
 			}
 
-		/*If all devices off, check BLE RSSI value for trigger*/
-		if (relayState == [0, 0, 0, 0, 0, 0] && rssiTrig) {
-			
-			/*Close all relays in AUTO, pause, check device currents, and open off devices in AUTO*/
-			allOn();
+			//TODO: When "All On" period is almost over, start measuring
+			// currents and prepare relay values, but do not set relays yet...
 
-			/*Reset RSSI Trigger*/
-			rssiTrig = 0;
-			
+			all_on_iter++;
 		}
-		
+
 		/*Otherwise, for each on device in AUTO, get current sample, compare to threshold, and open relay if necessary*/
 		else {
 			for i=1:1:6 {
@@ -159,9 +131,9 @@ int main(void)
 		/*Update relay and LED GPIO states based on relayState*/
 		ledState = relayState;
 		PORTX(1:6) = relayState;
-		PORTY(1:6) = ledState;
-		
-    }
+		PORTY(1:6) = ledState;	
+	}
+
 }
 
 
@@ -278,7 +250,8 @@ int allOn() {
 	/*Pause delay for all relays closed (s)*/
 	int pauseDelay = 30;
 
-	for i=1:1:6 {
+	int i;
+	for(i=0; i<6; i++) {
 		if (control(i)==1) {
 			relayState(i) = 1;
 		}
@@ -288,7 +261,7 @@ int allOn() {
 
 	sleep(pauseDelay);
 
-	for i=1:1:6 {
+	for(i=0; i<6; i++) {
 		if (control(i)==1) {
 			sample = getSample(i);
 			if (sample < threshold(i)) {
