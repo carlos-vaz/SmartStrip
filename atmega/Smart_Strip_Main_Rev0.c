@@ -11,8 +11,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-using namespace std;
-
 
 /* SETUP - All defined variables are global */
 	
@@ -81,10 +79,9 @@ int main(void)
     {
 		
 		
-
 		/*If no BLE connection, poll for BLE connection*/
 		if (BLEConnection == 0) {
-			BLEConnect();
+			// Try to connect
 		}
 
 		/*Otherwise, check BLE inbox*/
@@ -176,13 +173,12 @@ int startupCheckSensors() {
 	
 	bool OK = 1;
 
-	for i = 1:1:6 {
+	for (int i=0; i<6; i++) {
 		if (ADCInput(i) <2.4 || ADCInput(i) > 2.6) {
 			OK = 0;
 			break;
 		}
 	}
-	
 	return OK;
 }
 
@@ -345,8 +341,6 @@ int getSample(device){
 
 	/*Find peaks in sample array - move through array, find elements that end a zeros (previously negative section), then find max. values between each zeros section*/
 
-	
-
 
 	/*Average peaks to get sample*/
 	
@@ -354,3 +348,4 @@ int getSample(device){
 	return sample;
 
 }
+
