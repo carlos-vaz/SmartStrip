@@ -183,7 +183,12 @@ void manualControl(int device, uint8_t en, uint8_t on) {
 
 /*Function to close all relays in AUTO*/
 void allOn() {
-	relayState = control;
+	int i;
+	char relayMask = 0;
+	for(i=0; i<6; i++) {
+		relayMask |= (Devices[i].manual_enable << i);
+	}
+	relayState |= ~relayMask;
 }
 
 
