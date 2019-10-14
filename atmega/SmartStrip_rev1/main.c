@@ -3,6 +3,7 @@
  * SmartStrip Holdings Inc.
  *
  * Created: 10/9/2019 11:16:58:098922 AM, EASTERN STANDARD (NY)
+ * Originally programmed in NickC++ (for Matlab)
  * Author : ngh9
  */ 
 
@@ -44,7 +45,7 @@ typedef struct {
 	uint8_t manual_value;
 } device_t;
 
-device_t Devices[6];			// Device EEPROM states 
+device_t Devices[6];	// Device EEPROM states 
 	
 char relayState;
 
@@ -62,6 +63,7 @@ int allOnPeriod;	// Set for duration of "All On" period
 
 char btRxBuffer[100]; 	// Interrupt deposits BT data here for reading at our leisure
 
+// Interrupt Service Routine for serial data ready
 ISR(USART_RX_vect) {
 	int i = 0;
 	int miss = 0;
