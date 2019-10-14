@@ -102,7 +102,6 @@ int main(void)
 			// End of "All On" period
 				all_on_iter = 0;
 				allOnPeriod = 0;
-				allResume();
 			}
 
 			//TODO: When "All On" period is almost over, start measuring
@@ -242,18 +241,9 @@ int manualControl(device) {
 }
 
 
-/*Function to close all relays in AUTO, pause, check device currents, and open off devices in AUTO*/
+/*Function to close all relays in AUTO*/
 void allOn() {
-	
-	/*Pause delay for all relays closed (s)*/
-	int i;
-	for(i=0; i<6; i++) {
-		if (control[i]==1) {
-			relayState[i] = 1;
-		}
-	}
-
-	/*TODO: Move relayState to I/O pins*/	
+	relayState = control;
 }
 
 
