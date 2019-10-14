@@ -1,5 +1,5 @@
 /*
- * SmartStrip_Pseudocode_100919.c
+ * Copyright, SmartStrip Enterprises.
  *
  * Created: 10/9/2019 11:16:58 AM
  * Author : ngh9
@@ -8,9 +8,6 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <math.h>
-//#include <unistd.h>
-//#include <stdlib.h>
-
 
 int getSample(int);
 void allOn();
@@ -224,8 +221,6 @@ int getSample(int device){
 		_delay_ms(5);
 		
 	}
-
-
 
 	/*Find peaks in sample array - move through array, find elements that end a zeros (previously negative section), then find max. values between each zeros section*/
 
