@@ -145,6 +145,9 @@ void recordTeachIn(int device, int state) {
 	if (Devices[device].onCount >= 3 && Devices[device].offCount >= 3) {
 		Devices[device].suff_ex = 1;
 	}
+	else {
+		Devices[device].suff_ex = 0;
+	}
 }
 
 /*Manual control of devices*/
