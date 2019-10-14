@@ -19,6 +19,13 @@ void recordTeachIn(int device, int state);
 void teachInToggle(int device);
 
 // Bluetooth/Serial functions
+void int2str(uint16_t val, char* str);
+void UART_Init(unsigned int ubrr);
+void Serial_Send(char data[]);
+void UART_TX(unsigned char data);
+int Serial_Available();
+unsigned char UART_RX(void);
+int equals(char a[], const char b[]);
 
 
 typedef struct {
@@ -52,6 +59,27 @@ int BLEConnection = 0;
 #define RSSI_THRESH = -65;
 
 int allOnPeriod;	// Set for duration of "All On" period
+
+char btRxBuffer[100]; 	// Interrupt deposits BT data here for reading at our leisure
+
+ISR(USART_RX_vect) {
+	int i = 0;
+	int miss = 0;
+	while(1)
+	{
+		if(Serial_Available())
+			btRxBuffer[i++] = UART_RX();
+		else
+			miss++;
+		if(miss==10)
+			break;
+		_delay_ms(10);
+	}
+	btRxBuffer[i] = '\0';
+
+	reti();
+}
+
 
 int main(void)
 {
@@ -242,5 +270,77 @@ int getSample(int device){
 	for(i=0; i<256; i++)
 		ret += rawData[i] / 256;
 	return ret; 
+}
+
+
+/* SERIAL FUNCTION DEFINITIONS*/
+void int2str(uint16_t val, char* str)
+{
+	int digit, i;
+	for(i=0; i<5; i++) {
+		digit = val / pow(10,(4-i));
+		str[i] = digit + 48; // ascii offset
+		val = val - (pow(10,(4-i)) * digit);
+	}
+}
+
+void UART_Init(unsigned int ubrr)
+{
+	// Set baud rate
+	UBRR0H = (unsigned char)(ubrr>>8);
+	UBRR0L = (unsigned char)ubrr;
+	// Enable receiver/transmitter
+	UCSR0B = (1<<RXEN0) | (1<<TXEN0);
+	// Set frame format: 8 data + 1 stop bit
+	UCSR0C = (3<<UCSZ00);
+	//UCSR0C |= (1<<USBS0); // 2 stop bits
+
+	// Enable RX Complete Interrupts
+	UCSR0B |= (1<<RXCIE0);
+	sei();
+}
+
+void Serial_Send(char data[])
+{
+	int i;
+	for(i = 0; 1; i++) {
+		if(data[i] == '\0')
+			return;
+		UART_TX(data[i]);
+	}
+}
+
+void UART_TX(unsigned char data)
+{
+	// Wait until transmit buff is empty
+	while( !(UCSR0A & (1<<UDRE0)));
+
+	// Put data into buff
+	UDR0 = data;
+}
+
+int Serial_Available()
+{
+	return ( (UCSR0A & (1<<RXC0)) == 1<<RXC0) ? 1 : 0;
+}
+
+unsigned char UART_RX(void)
+{
+	// Wait for data to be available
+	while( !(UCSR0A & (1<<RXC0)));
+
+	// return data in buff
+	return UDR0;
+}
+
+int equals(char a[], const char b[]) {
+	int i = 0;
+	while(1) {
+		if(a[i] != b[i] || i > 256) 
+			return 0;
+		if(a[i] == '\0')
+			return 1;
+		i++;
+	}
 }
 
