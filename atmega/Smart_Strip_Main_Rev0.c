@@ -8,7 +8,6 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <math.h>
-#include <stdbool.h>
 #include <unistd.h>
 #include <stdlib.h>
 
@@ -17,13 +16,13 @@
 	
 	/*Define variables for outlet/device status*/
 		/*%Relay status*/
-		bool relayState[6];
+		char relayState[6];
 
 		/*Teach-in enable(1)/disable(0)*/
-		bool teachIn[6];
+		char teachIn[6];
 
 		/*Algorithm control enable(1)/disable(0)*/
-		bool control[6];
+		char control[6];
 
 	/*Define variables for device current data*/
 		/*Number of "off" samples saved*/
@@ -43,7 +42,7 @@
 		int threshold[6];
 			
 	/*Generic counter, tracking variables that will be overwritten*/
-	bool sampStatus;
+	int sampStatus;
 		
 	int i;
 	int device;
@@ -54,21 +53,17 @@
 	
 
 	/*Run startup diagnostics*/
-	bool statusSensors = startupCheckSensors();
-		
+	int statusSensors = startupCheckSensors();
+
 	/*Variables for BLE Status*/
 		/*BLE Connected*/
-		bool BLEConnection;
-
-		/*BLE RSSI Strength (if connected) - 2 variables to detect rising edge*/
-		int rssiLast;
-		int rssiNow;		
+		int BLEConnection;	
 		
 		/*Threshold for RSSI strength trigger*/
-		int rssiThresh = 50;
-			
-		/*Trigger to close relays on rising edged - latched by RSSI checker, unlatched by relay control*/
-		bool rssiTrig;
+		#define RSSI_THRESH = -65;
+
+		/*Set for duration of "All On" period*/			
+		int allOnPeriod;
 
 int main(void)
 {	
@@ -90,13 +85,14 @@ int main(void)
 		
 
 		/*Get RSSI strength and set trigger if necessary*/
-		if (BLEConnection==0 && rssiTrig==0) {
+		if (BLEConnection==0 && allOnPeriod==0) {
 			// Send AT+RSSI to BT module and read response
+			// On reading a close RSSI, set allOnPeriod = 1
 		}
 
 
 		/*If RSSI causes a trigger, activate all relays temporarily*/
-		if (rssiTrig) {
+		if (allOnPeriod) {
 			if(all_on_iter == 0) {
 			// Start of "All On" period
 				allOn();
@@ -105,7 +101,7 @@ int main(void)
 			if(all_on_iter == LOOP_COUNT_SHUTOFF) {
 			// End of "All On" period
 				all_on_iter = 0;
-				rssiTrig = 0;
+				allOnPeriod = 0;
 				allResume();
 			}
 
@@ -117,23 +113,25 @@ int main(void)
 
 		/*Otherwise, for each on device in AUTO, get current sample, compare to threshold, and open relay if necessary*/
 		else {
-			for i=1:1:6 {
-				if (relayState(i) == 1) {
-					sample = getSample(i);
-					if ((sample < threshold(i)) && (control(i)==1)) {
-						relayState(i) = 0;
+			int i;
+			char update_mask = 0;
+			for(i=0; i<6; i++) {
+				if (relayState & (1<<i)) {
+					sample = getSample[i];
+					if (sample < threshold[i] && control & (1<<i)) {
+						update_mask |= (1<<i);
 					}
 				}
 			}
-			
+			relayState &= ~update_mask;
 		}
 
 		/*Update relay and LED GPIO states based on relayState*/
+			
 		ledState = relayState;
-		PORTX(1:6) = relayState;
-		PORTY(1:6) = ledState;	
+		PORTX = relayState &= 0x3f;
+		PORTY = ledState & 0x3f;
 	}
-
 }
 
 
@@ -143,7 +141,7 @@ int main(void)
 /*Check sensors at microcontroller startup*/
 int startupCheckSensors() {
 	
-	bool OK = 1;
+	int OK = 1;
 
 	for (int i=0; i<6; i++) {
 		if (ADCInput(i) <2.4 || ADCInput(i) > 2.6) {
@@ -245,36 +243,18 @@ int manualControl(device) {
 
 
 /*Function to close all relays in AUTO, pause, check device currents, and open off devices in AUTO*/
-int allOn() {
+void allOn() {
 	
 	/*Pause delay for all relays closed (s)*/
-	int pauseDelay = 30;
-
 	int i;
 	for(i=0; i<6; i++) {
-		if (control(i)==1) {
-			relayState(i) = 1;
+		if (control[i]==1) {
+			relayState[i] = 1;
 		}
 	}
-	
-	/*Move relayState to I/O pins*/
 
-	sleep(pauseDelay);
-
-	for(i=0; i<6; i++) {
-		if (control(i)==1) {
-			sample = getSample(i);
-			if (sample < threshold(i)) {
-				relayState(i) = 0;
-			}
-		}
-	}
-	
-	/*Move relayState to I/O pins*/
-	
-
+	/*TODO: Move relayState to I/O pins*/	
 }
-
 
 
 /*Get filtered current sample from selected device*/
