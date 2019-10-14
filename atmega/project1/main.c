@@ -8,9 +8,15 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <math.h>
-#include <unistd.h>
-#include <stdlib.h>
+//#include <unistd.h>
+//#include <stdlib.h>
 
+
+int getSample(int);
+void allOn();
+void manualControl(int device, uint8_t en, uint8_t on);
+void recordTeachIn(int device, int state);
+int teachInToggle(int device);
 
 typedef struct {
 	// EEPROM state - training variables
@@ -101,9 +107,9 @@ int main(void)
 
 		/*Update relay and LED GPIO states based on relayState*/
 			
-		ledState = relayState;
+		/*ledState = relayState;
 		PORTX = relayState &= 0x3f;
-		PORTY = ledState & 0x3f;
+		PORTY = ledState & 0x3f;*/
 	}
 }
 
@@ -168,7 +174,7 @@ void allOn() {
 
 
 /*Get filtered current sample from selected device*/
-int getSample(device){
+int getSample(int device){
 	
 	int rawData[256];
 	int peaks[10];
