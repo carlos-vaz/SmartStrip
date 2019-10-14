@@ -20,6 +20,7 @@ void recordTeachIn(int device, int state);
 void teachInToggle(int device);
 
 // Bluetooth/Serial functions
+void bluetoothConfig();
 void int2str(uint16_t val, char* str);
 void UART_Init(unsigned int ubrr);
 void Serial_Send(char data[]);
@@ -46,7 +47,7 @@ typedef struct {
 } device_t;
 
 device_t Devices[6];	// Device EEPROM states 
-	
+
 char relayState;
 
 char teachIn;	//Teach-in enable(1)/disable(0)
@@ -54,8 +55,6 @@ char teachIn;	//Teach-in enable(1)/disable(0)
 #define LOOP_COUNT_SHUTOFF 100
 
 int all_on_iter = 0; // counts the loop iterations to determine when to shut off relays (after allOn())
-
-int BLEConnection = 0;
 
 #define RSSI_THRESH = -65;
 
@@ -93,8 +92,7 @@ int main(void)
 	
 	
 	/*BLE Setup Stuff*/
-	BLEConnection = 1;
-	
+	bluetoothConfig();
 
 	/* LOOP */
 	while (1) 
@@ -103,7 +101,7 @@ int main(void)
 		
 
 		/*Get RSSI strength and set trigger if necessary*/
-		if (BLEConnection==1 && allOnPeriod==0) {
+		if (allOnPeriod==0) {
 			// Send AT+RSSI to BT module and read response
 			// On reading a close RSSI, set allOnPeriod = 1
 		}
@@ -275,7 +273,20 @@ int getSample(int device){
 }
 
 
-/* SERIAL FUNCTION DEFINITIONS*/
+/* SERIAL / BLUETOOTH FUNCTION DEFINITIONS*/
+
+void bluetoothConfig()
+{
+	Serial_Send("AT+ROLE0\r\n");		// Role = peripheral (responds)
+	_delay_ms(100);	
+	Serial_Send("AT+UUID0xFFE0\r\n");	// Set UUID for service (phone looks for this)
+	_delay_ms(100);	
+	Serial_Send("AT+CHAR0xFFE1\r\n");	// Set UUID for characteristic (phone looks for this)
+	_delay_ms(100);	
+	Serial_Send("AT+NAMESmartStrip\r\n");	// ame that shows up on phone scan
+	_delay_ms(100);	
+}
+
 void int2str(uint16_t val, char* str)
 {
 	int digit, i;
