@@ -232,7 +232,7 @@ int getSample(int device){
 
 	/*Average peaks to get sample*/
 	
-	return 0;
+	return 0; // TODO: return sample
 
 }
 
