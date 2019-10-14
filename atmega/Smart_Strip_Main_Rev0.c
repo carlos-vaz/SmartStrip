@@ -43,6 +43,10 @@ int BLEConnection = 0;
 
 int allOnPeriod;	// Set for duration of "All On" period
 
+//Loop counters
+int i;
+int j;
+
 int main(void)
 {
 
@@ -86,7 +90,7 @@ int main(void)
 
 		/*Otherwise, for each on device in AUTO, get current sample, compare to threshold, and open relay if necessary*/
 		else {
-			int i;
+			
 			char update_mask = 0;
 			for(i=0; i<6; i++) {
 				if (relayState & (1<<i)) {
@@ -170,33 +174,51 @@ void allOn() {
 /*Get filtered current sample from selected device*/
 int getSample(device){
 	
-	int rawData[256] = 0;
-	int peaks[10] = 0;
+	int rawData[256];
+	int peaks[10];
 	int peakCount = 1;
+	int sumStore = 0;
+	
+	//Counter variables
+	int i;
+	int j;
 
 	/*Filtering sliding window width*/
 	int filtFactor = 5;
 	
 	/*Sample device CS at 3kHz for 0.5s*/
-	for i=1:1:256 {
+	for (i=0; i<256; i++) {
 		
-		rawData(i) = ADCRead(device);
+	
+		/*
+		rawData[i] = ADCRead(device);
+		*/
 		
 		/*Make all samples positive (512-1024)*/
-		if (rawData(i)<512) {
-			rawData(i) = rawData(i)+(2*(512-rawData(i)));
+		if (rawData[i]<512) {
+			rawData[i] = rawData[i]+(2*(512-rawData[i]));
 		}
-		
+			
 		/*Normalize to 0-512*/
-		rawData(i) = rawData(i) - 512;
-		
+		rawData[i] = rawData[i] - 512;
+			
 		if (i>=(filtFactor-1)) {
 			
-			/*Overwrite raw data array with filtered data */
-			rawData(i-filtFactor) = mean(rawData((i-filtFactor):i));
-		}
-		
-		sleep(x);
+			sumStore = 0;
+			
+			// Overwrite raw data array with filtered (mean) data
+			// rawData(i-filtFactor) = mean(rawData((i-filtFactor):i))
+			for (j=(i-filtFactor); j<=i; j++) {
+				
+				sumStore = sumStore + rawData[j];
+				
+			}
+			
+			rawData[i-filtFactor] = sumStore/filtFactor;	
+	
+		}		
+	
+		_delay_ms(5);
 		
 	}
 
