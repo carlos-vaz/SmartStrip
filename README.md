@@ -1,2 +1,2 @@
 # SmartStrip
-A strip that's smart
+The strip that's smart
