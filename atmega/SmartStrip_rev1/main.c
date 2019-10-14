@@ -230,9 +230,12 @@ int getSample(int device){
 	/*Find peaks in sample array - move through array, find elements that end a zeros (previously negative section), then find max. values between each zeros section*/
 
 
-	/*Average peaks to get sample*/
-	
-	return 0; // TODO: return sample
+	/*TODO: Average peaks to get sample*/
 
+	// For now, return average
+	int ret = 0;
+	for(i=0; i<256; i++)
+		ret += rawData[i] / 256;
+	return ret; 
 }
 
