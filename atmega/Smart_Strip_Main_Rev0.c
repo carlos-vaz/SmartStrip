@@ -27,30 +27,21 @@ typedef struct {
 	uint8_t manual_value;
 } device_t;
 
-/* SETUP - All defined variables are global */
+device_t Devices[6];			// Device EEPROM states 
 	
-	/*Define variables for outlet/device status*/
-		/*%Relay status*/
-		char relayState[6] = {0,0,0,0,0,0};
+char relayState[6] = {0,0,0,0,0,0};
 
-		/*Teach-in enable(1)/disable(0)*/
-		char teachIn[6] = {0,0,0,0,0,0};
+char teachIn[6] = {0,0,0,0,0,0};	//Teach-in enable(1)/disable(0)
 
-		/*On/off current thresholds*/
-		device_t Devices[6];
+#define LOOP_COUNT_SHUTOFF 100
 
-	int all_on_iter = 0; // counts the loop iterations to determine when to shut off relays (after allOn())
-	#define LOOP_COUNT_SHUTOFF 100
-	
-	/*Variables for BLE Status*/
-		/*BLE Connected*/
-		int BLEConnection;	
-		
-		/*Threshold for RSSI strength trigger*/
-		#define RSSI_THRESH = -65;
+int all_on_iter = 0; // counts the loop iterations to determine when to shut off relays (after allOn())
 
-		/*Set for duration of "All On" period*/			
-		int allOnPeriod;
+int BLEConnection = 0;
+
+#define RSSI_THRESH = -65;
+
+int allOnPeriod;	// Set for duration of "All On" period
 
 int main(void)
 {
@@ -58,6 +49,7 @@ int main(void)
 	/*Load state from EEPROM*/
 	
 	/*BLE Setup Stuff*/
+	BLEConnection = 1;
 	
 
 	/* LOOP */
@@ -67,7 +59,7 @@ int main(void)
 		
 
 		/*Get RSSI strength and set trigger if necessary*/
-		if (BLEConnection==0 && allOnPeriod==0) {
+		if (BLEConnection==1 && allOnPeriod==0) {
 			// Send AT+RSSI to BT module and read response
 			// On reading a close RSSI, set allOnPeriod = 1
 		}
@@ -183,24 +175,10 @@ int recordTeachIn(int device, int state) {
 
 }
 
-
-/*Enable/disable algorithm outlet control*/
-void controlEnable(int device, int enable) {
-	char mask = (1<<device);
-	if(on==1)
-		control |= mask;
-	else
-		control &= ~mask;
-}
-
-
 /*Manual control of devices*/
-void manualControl(int device, int on) {
-	char mask = (1<<device);
-	if(on==1)
-		relayState |= mask;
-	else
-		relayState &= ~mask;
+void manualControl(int device, uint8_t en, uint8_t on) {
+	Devices[device].manual_enable = en;
+	Devices[device].manual_value = on;
 }
 
 /*Function to close all relays in AUTO*/
