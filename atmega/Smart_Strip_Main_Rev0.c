@@ -14,11 +14,11 @@
 
 typedef struct {
 	// EEPROM state - training variables
-	uint16_t threshold;
+	float threshold;
 	uint16_t minOn;		// Lowest ON example value
 	uint16_t maxOff;
-	uint16_t numOn;		// Num ON examples
-	uint16_t numOff;
+	uint16_t onCount;	// Num ON examples
+	uint16_t offCount;
 	uint16_t suff_ex;	// sufficient examples
 
 	// EEPROM state - control variables
@@ -71,7 +71,7 @@ int main(void)
 			// Start of "All On" period
 				allOn();
 			}
-			
+
 			if(all_on_iter == LOOP_COUNT_SHUTOFF) {
 			// End of "All On" period
 				all_on_iter = 0;
@@ -117,62 +117,34 @@ int teachInToggle(int device) {
 }
 
 /*Take sample, classify, refresh threshold, and update counts*/
-int recordTeachIn(int device, int state) {
+void recordTeachIn(int device, int state) {
 	
 	int sample = getSample(device);
 	int sampStatus = 1;
 	
-	/*Off sample*/
+	/*OFF sample*/
 	if (state == 0) {
-		/*Check sample is LT all ON samples*/
-		int i;
-		for(i=0; i<oncount[device]; i++) {
-			if (sample >= currentdata[device][0][i]) {
-				sampStatus = 0;
-				break;
-			}
-		}
-
-		/*If sample good, add to device's off sample library and update count*/
-		if (sampStatus == 1){
-			currentdata[device][0][offcount[device]+1] = sample;
-			offcount[device]++;
+		/*If sample is LT all ON samples, update threshold and offCount*/
+		if (sample < Devices[device].minOn) {
+			Devices[device].offCount++;
+			Devices[device].threshold += (float)(sample*Devices[devices].offCount-1)/Devices[devices].offCount;
 		}
 	}
 
-	/*On sample*/
+	/*ON sample*/
 	else {
-		/*Check sample is GT all OFF samples*/
-
-		for(i=0; i<offcount[device]; i++) {
-			if (sample <= currentdata[device][1][i]) {
-				sampStatus = 0;
-				break;
-			}
-		}
-
-		/*If sample good, add to device's on sample library and update count*/
-		if (sampStatus == 1){
-			currentdata[device][0][oncount[device]+1] = sample;
-			oncount[device]++;
+		/*If sample is GT all OFF samples, update threshold and onCount*/
+		if (sample > Devices[device].maxOff) {
+			Devices[device].onCount++;
+			Devices[device].threshold += (float)(sample*Devices[devices].onCount-1)/Devices[devices].onCount;
 		}
 	}
 
 
 	/*Check device status - if device has at least 3 off and 3 on samples, status = 1*/
-	if (status[device]==0 && sampStatus==1){
-		if ((offcount(device)>=3) && (oncount(device)>=3)) {
-			status(device) = 1;
-		}
+	if (Devices[device].onCount >= 3 && Devices[device].offCount >= 3) {
+		Devices[device].suff_ex = 1;
 	}
-
-	/*Update threshold*/
-	if (status(device)==1 && sampStatus==1) {
-		threshold(device) = avg([avg(currentdata(device, 1, (0:oncount(device))), mean(currentdata(device, 0, (0:offcount(device))));
-	}
-
-	return oncount(device), offcount(device), status(device), sampStatus, threshold(device)
-
 }
 
 /*Manual control of devices*/
