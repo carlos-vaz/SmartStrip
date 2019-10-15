@@ -4,7 +4,7 @@
  *
  * Created: 10/9/2019 11:16:58:098922 AM, EASTERN STANDARD (NY)
  * Originally programmed in NickC++ (for Matlab)
- * Author : ngh9
+ * Authors : ngh9, cdv16
  */ 
 
 #include <avr/io.h>
