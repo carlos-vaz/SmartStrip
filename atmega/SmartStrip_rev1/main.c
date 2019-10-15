@@ -12,6 +12,11 @@
 #include <util/delay.h>
 #include <math.h>
 
+/* Every (BAUDCOUNTER + 1 )clock cycles a baud is generated. 
+ * (8 MHz / 16) / (51+1) = 9615 Baud, which is the closest
+ * we can get to 9600*/
+#define BAUDCOUNTER 51
+
 // Capture/control functions
 int getSample(int);
 void allOn();
@@ -277,6 +282,11 @@ int getSample(int device){
 
 void bluetoothConfig()
 {
+	// Setup UART
+	UART_Init(BAUDCOUNTER);
+
+	_delay_ms(1000);
+
 	Serial_Send("AT+ROLE0\r\n");		// Role = peripheral (responds)
 	_delay_ms(100);	
 	Serial_Send("AT+UUID0xFFE0\r\n");	// Set UUID for service (phone looks for this)
