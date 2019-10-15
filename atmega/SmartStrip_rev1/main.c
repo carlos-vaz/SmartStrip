@@ -217,21 +217,57 @@ void allOn() {
 	relayState |= ~relayMask;
 }
 
+//BASIC FUNCTIONS
+int average(int array[]) {
+	int length = sizeof(array);
+	int arrayTot;
+	int average;
+	int i;
+
+	for (i=0; i<length; i++){
+		arrayTot = arrayTot + array[i];
+	}
+	average = arrayTot/length;
+	return average;
+}
+
+
+int max(int array[]) {
+	int length = sizeof(array);
+	int max = array[0];
+	int i;
+
+	for (i=1; i<length; i++){
+		if (array[i] > max) {
+			max = array[i];
+		}
+	}
+	return max;
+}
+
 
 /*Get filtered current sample from selected device*/
 int getSample(int device){
 	
 	int rawData[256];
-	//int peaks[10];
-	//int peakCount = 1;
-	int sumStore = 0;
+	int peaks[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	int peakCnt = 0;
+	
+	//Final sample returned
+	int sample;
 	
 	//Counter variables
 	int i;
 	int j;
+	int k;
 
 	/*Filtering sliding window width*/
 	int filtFactor = 5;
+	int dataPassArry1[filtFactor];
+	
+	/*Maximum finder window half-width*/
+	int maxFindHW = 2;
+	int dataPassArry2[(2*maxFindHW)+1];
 	
 	/*Sample device CS at 3kHz for 0.5s*/
 	for (i=0; i<256; i++) {
@@ -243,7 +279,7 @@ int getSample(int device){
 
 		/*Make all samples positive (512-1024)*/
 		if (rawData[i]<512) {
-			rawData[i] = rawData[i]+(2*(512-rawData[i]));
+			rawData[i] = 1024 - rawData[i];
 		}
 
 		/*Normalize to 0-512*/
@@ -251,17 +287,16 @@ int getSample(int device){
 
 		if (i>=(filtFactor-1)) {
 			
-			sumStore = 0;
-			
 			// Overwrite raw data array with filtered (mean) data
-			// rawData(i-filtFactor) = mean(rawData((i-filtFactor):i))
-			for (j=(i-filtFactor); j<=i; j++) {
-				
-				sumStore = sumStore + rawData[j];
-				
+			
+			//Write values to be averaged to a separate array because apparently you can't reference just part of an array in C
+			k=0;
+			for ((j=i-filtFactor+1); j<=i; j++){
+				dataPassArry1[k] = rawData[j];
+				k++;
 			}
 			
-			rawData[i-filtFactor] = sumStore/filtFactor;	
+			rawData[i-filtFactor] = average(dataPassArry1);	
 	
 		}
 	
@@ -270,15 +305,36 @@ int getSample(int device){
 	}
 
 	/*Find peaks in sample array - move through array, find elements that end a zeros (previously negative section), then find max. values between each zeros section*/
+	for(i=0; i<256; i++) {
+		
+		//Write values to be averaged to a separate array?
+		k=0;
+		for((j=i-maxFindHW); j<=(i+maxFindHW); j++){
+			dataPassArry2[k] = rawData[j];
+			k++;
+		}
+		
+		if ((i>=(maxFindHW-1)) && (rawData[i] == max(dataPassArry2))){
+			
+			peaks[peakCnt] = rawData[i];
+			peakCnt++;
+			
+		}
+	}
 
+	/*Average peaks to get sample*/
+		int dataPassArry3[(peakCnt+1)];
+	
+		//Write values to be averaged to a separate array?
+		k=0;
+		for(j=0; j<=peakCnt; j++){
+			dataPassArry3[k] = peaks[j];
+			k++;
+		}
+	
+	sample = average(dataPassArry3);
 
-	/*TODO: Average peaks to get sample*/
-
-	// For now, return average
-	int ret = 0;
-	for(i=0; i<256; i++)
-		ret += rawData[i] / 256;
-	return ret; 
+	return sample;
 }
 
 
