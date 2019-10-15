@@ -17,13 +17,18 @@
  * we can get to 9600*/
 #define BAUDCOUNTER 51
 
+typedef struct thresh {
+	int val;	
+	uint16_t onCount;
+	uint16_t offCount;
+} thresh_t;
+
+
 typedef struct device {
 	// EEPROM state - training variables
-	float threshold;
+	thresh_t threshold;
 	uint16_t minOn;		// Lowest ON example value
 	uint16_t maxOff;
-	uint16_t onCount;	// Num ON examples
-	uint16_t offCount;
 	uint8_t suff_ex;	// sufficient examples
 
 	// EEPROM state - control variables
@@ -32,17 +37,18 @@ typedef struct device {
 	uint8_t manual_enable;
 	uint8_t manual_value;
 } device_t;
-			// 	 ________________________________________________________
-typedef struct command { //	| STORE	|     TEACH 	|      MODE	|   OVERRIDE	| 
-	char op;	//	|-------------------------------------------------------|
-	uint8_t outlet;	//	|   X	|	X	|		| 		|	// X = normal field
-	uint8_t threshold;//	|   X	|	X	|      (R)	|		|	// (R) = response field
-	uint8_t mode;	//	|	|		| 	X	| 		|
-	uint8_t mask;	//	|	|		| 		|	X	|
-	uint8_t duration;//	|	|		| 		|	X	|
-	uint8_t stop;	//	|	|		|      (R)	|		|
-	uint8_t ok;	//	|  (R)	|      (R)	|		|      (R)	|
-			// 	 -------------------------------------------------------
+	
+				// 	 ________________________________________________________
+typedef struct command { 	//	| STORE	|     TEACH 	|      MODE	|   OVERRIDE	| 
+	char op;		//	|-------------------------------------------------------|
+	unsigned char outlet;	//	|   X	|	X	|		| 		|	// X = normal field
+	thresh_t threshold;	//	|   X	|	X	|      (R)	|		|	// (R) = response field
+	unsigned char mode;	//	|	|		| 	X	| 		|
+	unsigned char mask;	//	|	|		| 		|	X	|
+	unsigned char duration;	//	|	|		| 		|	X	|
+	unsigned char stop;	//	|	|		|      (R)	|		|
+	unsigned char ok;	//	|  (R)	|      (R)	|		|      (R)	|
+				// 	 -------------------------------------------------------
 } command_t;
 
 // Capture/control functions
@@ -114,21 +120,21 @@ int main(void)
 
 			command_t cmd = parseCommand(btRxBuffer);
 
-			if(cmd.op == 0)
+			if(cmd.op == 's')
 			{
 				// STORE command
 			}
-			else if(cmd.op == 1)
+			else if(cmd.op == 't')
 			{
 				// TEACH command
 				
 			}
-			else if(cmd.op == 2)
+			else if(cmd.op == 'm')
 			{
 				// MODE command
 				
 			}
-			else if(cmd.op == 3)
+			else if(cmd.op == 'o')
 			{
 				// OVERRIDE command
 				
@@ -174,7 +180,7 @@ int main(void)
 			for(i=0; i<6; i++) {
 				if (relayState & (1<<i)) {
 					uint16_t sample = getSample(i);
-					if (sample < Devices[i].threshold && Devices[i].algo_enable==1) {
+					if (sample < Devices[i].threshold.val && Devices[i].algo_enable==1) {
 						update_mask |= (1<<i);
 					}
 				}
@@ -208,8 +214,8 @@ void recordTeachIn(int device, int state) {
 	if (state == 0) {
 		/*If sample is LT all ON samples, update threshold and offCount*/
 		if (sample < Devices[device].minOn) {
-			Devices[device].offCount++;
-			Devices[device].threshold += (float)(sample*Devices[device].offCount-1)/Devices[device].offCount;
+			Devices[device].threshold.offCount++;
+			Devices[device].threshold.val += (float)(sample*Devices[device].threshold.offCount-1)/Devices[device].threshold.offCount;
 			if(sample > Devices[device].maxOff)
 				Devices[device].maxOff = sample;
 		}
@@ -219,8 +225,8 @@ void recordTeachIn(int device, int state) {
 	else {
 		/*If sample is GT all OFF samples, update threshold and onCount*/
 		if (sample > Devices[device].maxOff) {
-			Devices[device].onCount++;
-			Devices[device].threshold += (float)(sample*Devices[device].onCount-1)/Devices[device].onCount;
+			Devices[device].threshold.onCount++;
+			Devices[device].threshold.val += (float)(sample*Devices[device].threshold.onCount-1)/Devices[device].threshold.onCount;
 			if(sample < Devices[device].minOn)
 				Devices[device].minOn = sample;
 		}
@@ -228,7 +234,7 @@ void recordTeachIn(int device, int state) {
 
 
 	/*Check device status - if device has at least 3 off and 3 on samples, status = 1*/
-	if (Devices[device].onCount >= 3 && Devices[device].offCount >= 3) {
+	if (Devices[device].threshold.onCount >= 3 && Devices[device].threshold.offCount >= 3) {
 		Devices[device].suff_ex = 1;
 	}
 	else {
@@ -364,8 +370,28 @@ void bluetoothConfig()
 command_t parseCommand()
 {
 	command_t ret;
+	thresh_t threshold;
 
 	// DO SOME PARSING
+	switch (btRxBuffer[0])
+	{
+		case 's':
+
+			break;
+
+		case 't':
+			
+			break;
+
+		case 'm':
+			
+			break;
+
+		case 'o':
+			
+			break;
+	}
+
 
 	return ret;
 }
