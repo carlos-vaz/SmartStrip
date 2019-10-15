@@ -17,6 +17,34 @@
  * we can get to 9600*/
 #define BAUDCOUNTER 51
 
+typedef struct device {
+	// EEPROM state - training variables
+	float threshold;
+	uint16_t minOn;		// Lowest ON example value
+	uint16_t maxOff;
+	uint16_t onCount;	// Num ON examples
+	uint16_t offCount;
+	uint8_t suff_ex;	// sufficient examples
+
+	// EEPROM state - control variables
+	uint8_t outlet;
+	uint8_t algo_enable;
+	uint8_t manual_enable;
+	uint8_t manual_value;
+} device_t;
+			// 	 ________________________________________________________
+typedef struct command { //	| STORE	|     TEACH 	|      MODE	|   OVERRIDE	| 
+	char op;	//	|-------------------------------------------------------|
+	uint8_t outlet;	//	|   X	|	X	|		| 		|	// X = normal field
+	uint8_t threshold;//	|   X	|	X	|      (R)	|		|	// (R) = response field
+	uint8_t mode;	//	|	|		| 	X	| 		|
+	uint8_t mask;	//	|	|		| 		|	X	|
+	uint8_t duration;//	|	|		| 		|	X	|
+	uint8_t stop;	//	|	|		|      (R)	|		|
+	uint8_t ok;	//	|  (R)	|      (R)	|		|      (R)	|
+			// 	 -------------------------------------------------------
+} command_t;
+
 // Capture/control functions
 int getSample(int);
 void allOn();
@@ -26,6 +54,7 @@ void teachInToggle(int device);
 
 // Bluetooth/Serial functions
 void bluetoothConfig();
+command_t parseCommand();
 void int2str(uint16_t val, char* str);
 void UART_Init(unsigned int ubrr);
 void Serial_Send(char data[]);
@@ -33,28 +62,11 @@ void UART_TX(unsigned char data);
 int Serial_Available();
 unsigned char UART_RX(void);
 int equals(char a[], const char b[]);
+void clearBuf();
 
-
-typedef struct {
-	// EEPROM state - training variables
-	float threshold;
-	uint16_t minOn;		// Lowest ON example value
-	uint16_t maxOff;
-	uint16_t onCount;	// Num ON examples
-	uint16_t offCount;
-	uint16_t suff_ex;	// sufficient examples
-
-	// EEPROM state - control variables
-	uint8_t outlet;
-	uint8_t algo_enable;
-	uint8_t manual_enable;
-	uint8_t manual_value;
-} device_t;
 
 device_t Devices[6];	// Device EEPROM states 
-
 char relayState;
-
 char teachIn;	//Teach-in enable(1)/disable(0)
 
 #define LOOP_COUNT_SHUTOFF 100
@@ -65,25 +77,19 @@ int all_on_iter = 0; // counts the loop iterations to determine when to shut off
 
 int allOnPeriod;	// Set for duration of "All On" period
 
-char btRxBuffer[100]; 	// Interrupt deposits BT data here for reading at our leisure
+#define RX_BUFF_SIZE 20
+
+volatile char btRxBuffer[RX_BUFF_SIZE];	 // Interrupt deposits BT data here for reading at our leisure
+volatile int buff_i = 0;
+volatile int new_msg_flag;
 
 // Interrupt Service Routine for serial data ready
 ISR(USART_RX_vect) {
-	int i = 0;
-	int miss = 0;
-	while(1)
-	{
-		if(Serial_Available())
-			btRxBuffer[i++] = UART_RX();
-		else
-			miss++;
-		if(miss==10)
-			break;
-		_delay_ms(10);
-	}
-	btRxBuffer[i] = '\0';
+	btRxBuffer[buff_i++] = UART_RX();
+	if(buff_i == RX_BUFF_SIZE)
+		buff_i = 0;
 
-	reti();
+	new_msg_flag = 1;
 }
 
 
@@ -103,6 +109,35 @@ int main(void)
 	while (1) 
 	{
 		/*Check Bluetooth Message Buffer*/
+		if(new_msg_flag) {
+			_delay_ms(100); // allow some time in case RX buffer is still filling up
+
+			command_t cmd = parseCommand(btRxBuffer);
+
+			if(cmd.op == 0)
+			{
+				// STORE command
+			}
+			else if(cmd.op == 1)
+			{
+				// TEACH command
+				
+			}
+			else if(cmd.op == 2)
+			{
+				// MODE command
+				
+			}
+			else if(cmd.op == 3)
+			{
+				// OVERRIDE command
+				
+			}
+
+
+			clearBuf();
+			new_msg_flag = 0;
+		}
 		
 
 		/*Get RSSI strength and set trigger if necessary*/
@@ -355,6 +390,17 @@ void bluetoothConfig()
 	_delay_ms(100);	
 	Serial_Send("AT+NAMESmartStrip\r\n");	// ame that shows up on phone scan
 	_delay_ms(100);	
+
+	new_msg_flag = 0;
+}
+
+command_t parseCommand()
+{
+	command_t ret;
+
+	// DO SOME PARSING
+
+	return ret;
 }
 
 void int2str(uint16_t val, char* str)
@@ -425,5 +471,13 @@ int equals(char a[], const char b[]) {
 			return 1;
 		i++;
 	}
+}
+
+void clearBuf()
+{
+	buff_i = 0;
+	int i;
+	for(i=0; i<RX_BUFF_SIZE; i++)
+		btRxBuffer[i] = 0;
 }
 
