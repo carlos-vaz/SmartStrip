@@ -175,6 +175,8 @@ void recordTeachIn(int device, int state) {
 		if (sample < Devices[device].minOn) {
 			Devices[device].offCount++;
 			Devices[device].threshold += (float)(sample*Devices[device].offCount-1)/Devices[device].offCount;
+			if(sample > Devices[device].maxOff)
+				Devices[device].maxOff = sample;
 		}
 	}
 
@@ -184,6 +186,8 @@ void recordTeachIn(int device, int state) {
 		if (sample > Devices[device].maxOff) {
 			Devices[device].onCount++;
 			Devices[device].threshold += (float)(sample*Devices[device].onCount-1)/Devices[device].onCount;
+			if(sample < Devices[device].minOn)
+				Devices[device].minOn = sample;
 		}
 	}
 
