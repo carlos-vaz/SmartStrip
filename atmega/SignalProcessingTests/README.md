@@ -13,9 +13,8 @@ rawData[1],filteredData[1],extendedPeaks[1],final[1]
 ```
 
 ### `waves.py` 
-plots the four curves described above: 
-+ raw: GREEN
-+ filtered: RED
-+ peaks: BLUE
-+ final: YELLOW
+plots the four curves described above: raw (green), filtered (red), peaks (blue), final (yellow)  
 
+![alt text][plot]
+
+[plot]: https://github.com/fullprocess/SmartStrip/blob/master/atmega/SignalProcessingTests/plot.png
