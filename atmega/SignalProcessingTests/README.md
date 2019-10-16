@@ -6,9 +6,11 @@ Implements a modified `getSample()` function that fills four arrays:
 + `extendedPeaks[256]` - every peak that is found updates a `lastpeak` variable
 + `final[256]` - a single value (average of all peaks) populates all elements
 After sampling, the serial terminal will be filled with the array values in CSV format:  
-\[rawData[0]\]\[filteredData[0]\]\[extendedPeaks[0]\]\[final[0]\]  
-\[rawData[1]\]\[filteredData[1]\]\[extendedPeaks[1]\]\[final[1]\]
+```
+[rawData[0]][filteredData[0]][extendedPeaks[0]][final[0]]  
+[rawData[1]][filteredData[1]][extendedPeaks[1]][final[1]]  
 ...
+```
 
 ### `waves.py` 
 plots the four curves described above: 
