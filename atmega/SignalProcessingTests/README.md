@@ -21,7 +21,7 @@ plots the four curves described above: raw (green), filtered (red), peaks (blue)
 
 ## Instructions
 ### 1. Flash the Arduino
-Flash [`simple\_serial\_monitor.ino`](https://github.com/fullprocess/SmartStrip/blob/master/arduino/SerialMonitors/simple_serial_monitor.ino) to the Arduino to monitor the 
+Flash [`simple_serial_monitor.ino`](https://github.com/fullprocess/SmartStrip/blob/master/arduino/SerialMonitors/simple_serial_monitor.ino) to the Arduino to monitor the 
 TX output of the ATmega644. 
 
 ### 2. Flash the ATmega
