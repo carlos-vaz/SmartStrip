@@ -28,5 +28,5 @@ TX output of the ATmega644.
 Compile [`main.c`](https://github.com/fullprocess/SmartStrip/blob/master/atmega/SignalProcessingTests/main.c) and flash to the ATmega644. Then, connect power to the Arduino and Atmega at the same time, and open a serial terminal to the Arduino (e.g. from Arduino Studio)
 
 ### 3. Plot the waveforms
-Copy the CSV-style output from the serial terminal, paste into a file named `data.txt` in the same directory as `waves.py`, and run `python waves.py`. 
+Copy the CSV-style output from the serial terminal, paste into a file named `data.txt` in the same directory as [`waves.py`](https://github.com/fullprocess/SmartStrip/blob/master/atmega/SignalProcessingTests/waves.py), and run `python waves.py`. 
 
