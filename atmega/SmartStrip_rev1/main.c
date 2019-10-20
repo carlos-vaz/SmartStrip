@@ -58,6 +58,11 @@ void manualControl(int device, uint8_t en, uint8_t on);
 void recordTeachIn(int device, int state);
 void teachInToggle(int device);
 
+// ADC functions
+void adcConfig();
+uint16_t sampleADC();
+
+
 // Bluetooth/Serial functions
 void bluetoothConfig();
 command_t parseCommand();
@@ -90,7 +95,7 @@ volatile int buff_i = 0;
 volatile int new_msg_flag;
 
 // Interrupt Service Routine for serial data ready
-ISR(USART_RX_vect) {
+ISR(USART0_RX_vect) {
 	btRxBuffer[buff_i++] = UART_RX();
 	if(buff_i == RX_BUFF_SIZE)
 		buff_i = 0;
@@ -106,7 +111,9 @@ int main(void)
 	cli();	// disable interrupts to avoid corruption
 	sei();	// re-enable interrupts
 	
-	
+	/*ADC Setup Stuff*/
+	adcConfig();
+
 	
 	/*BLE Setup Stuff*/
 	bluetoothConfig();
@@ -271,76 +278,129 @@ int max(int array[]) {
 	return max;
 }
 
+void adcConfig() {
+	DDRA= 0x00; //Set port A to inputs (from ADC)  
+	
+	//Initialize A/D Conversion
+	ADCSRA = 1<<ADEN | 1<<ADPS2|0<<ADPS1|1<<ADPS0; // 0x87 // 0b10000111 // Set  ADC Enable bit (7) in ADCSRA register, and set ADC prescaler to 128
+	ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR; //0x60; // 0b01100000  // select Analog  Reference voltage to be AVcc and use right justify
+}
+
+// Must be called from within getSample(), which selects the channel before calling this!
+uint16_t sampleADC() {
+	uint8_t  Current1;
+	uint8_t  Current2;
+	uint16_t  Current;
+
+	ADCSRA|=(1<<ADSC); // Start conversion 
+	while ((ADCSRA & (1<<ADIF))==0); // wait for completion
+	Current2=ADCL;
+	Current1=ADCH;
+	Current= (Current1<<8)|Current2;
+	Current= Current & 0x3FF;
+
+	return Current;
+}
+
 
 /*Get filtered current sample from selected device*/
-int getSample(int device){
+int getSample(int device) {
 
 	#define SAMPLES 256
 	#define MAXPEAKS 10
 	#define WINDOW 5
 	#define FIND_PEAKS_HALF_WINDOW 2
 
-
-	int rawData[SAMPLES];
-	int peaks[MAXPEAKS];
 	int peakCnt = 0;
 
-	
-	/*Sample device CS at 3kHz for 0.5s*/
+	uint16_t rawData[SAMPLES];
+	uint16_t peaks[MAXPEAKS];
+
+	// Select ADC Channel based on device
+	switch(device)
+	{
+		//ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR;// select Analog  Reference voltage to be AVcc and use right justify
+		case 1: ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR|0<<MUX3|0<<MUX2|0<<MUX1|0<<MUX0;// 0b01100000
+		case 2: ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR|0<<MUX3|0<<MUX2|0<<MUX1|1<<MUX0;// 0b01100001
+		case 3: ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR|0<<MUX3|0<<MUX2|1<<MUX1|0<<MUX0;// 0b01100010
+		case 4: ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR|0<<MUX3|1<<MUX2|0<<MUX1|0<<MUX0;// 0b01100100
+		case 5: ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR|0<<MUX3|1<<MUX2|0<<MUX1|1<<MUX0;// 0b01100101
+		case 6: ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR|0<<MUX3|1<<MUX2|1<<MUX1|0<<MUX0;// 0b01100110
+	}
+
+
+	//Sample device CS at 3kHz for 256 samples
 	int i;
 	for (i=0; i<SAMPLES; i++) {
-		/*
-		rawData[i] = ADCRead(device);
-		*/
 
-		/*Make all samples positive (512-1024)*/
+		//Get sample from ADC
+		rawData[i] = sampleADC();
+
+
+		//Make all samples positive (512-1024)
 		if (rawData[i]<512) {
 			rawData[i] = 1024 - rawData[i];
 		}
 
-		/*Shift values to range 0-512*/
+		//Shift values to range 0-512
 		rawData[i] = rawData[i] - 512;
 
 		if (i >= WINDOW - 1) {
+
 			// Overwrite raw data array with filtered (mean) data
 			int k;
 			float avg = 0;
+			
+			//Sum
 			for(k=0; k<WINDOW; k++) {
-				avg += (float)rawData[i-k] / WINDOW;
+				avg += (float)rawData[i-k];
 			}
-
+			
+			//Divide
+			avg = avg/WINDOW;
+		
+			//Overwrite raw data array with average
 			rawData[i-WINDOW+1] = (int) avg;
 		}
 
-		_delay_ms(5);
 
+		//Delay - See window vs. delay table
+		_delay_us(15);	
 	}
 
-	/*Find peaks in sample array - move through array, find elements that end a zeros (previously negative section), then find max. values between each zeros section*/
-	for(i=FIND_PEAKS_HALF_WINDOW; i<SAMPLES-FIND_PEAKS_HALF_WINDOW; i++) {
+
+	//Find peaks in sample array - move through array, find elements that end a zeros (previously negative section), then find max. values between each zeros section
+	for(i=FIND_PEAKS_HALF_WINDOW-1; i<SAMPLES-FIND_PEAKS_HALF_WINDOW-WINDOW; i++) {
 
 		int k, max = 0;
-		// Find max around window center (excluding center point)
+		
+		// Find max around window center
 		for(k=-1*FIND_PEAKS_HALF_WINDOW; k<=FIND_PEAKS_HALF_WINDOW; k++) {
-			if(k != 0 && rawData[i+k] > max)
+			if(rawData[i+k] > max) {
 				max = rawData[i+k];
+			}
+			
 		}
 
-		// check if center is strictly greater than surrounding window
-		if(rawData[i] > max) {
+		// Check if point = max
+		if(rawData[i] == max) {
 			peaks[peakCnt++] = rawData[i];
 		}
 
-		if(peakCnt == MAXPEAKS)
+		if(peakCnt == MAXPEAKS) {
 			break;
+		}
+		
 	}
 
 	float sample = 0;
 
 	// Average all peaks
 	for(i=0; i<peakCnt; i++) {
-		sample += (float) peaks[i] / peakCnt;
+		sample += (float) peaks[i];
 	}
+	
+	sample = sample/peakCnt;
 
 	return (int) sample;
 }
