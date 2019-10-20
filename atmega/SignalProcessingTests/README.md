@@ -17,7 +17,7 @@ plots the four curves described above: raw (green), filtered (red), peaks (blue)
 
 ![alt text][plot]
 
-[plot]: https://github.com/fullprocess/SmartStrip/blob/master/atmega/SignalProcessingTests/plot.png
+[plot]: https://github.com/fullprocess/SmartStrip/blob/master/atmega/SignalProcessingTests/images/potentiometer_plot.png
 
 ## Instructions
 ### 1. Flash the Arduino
