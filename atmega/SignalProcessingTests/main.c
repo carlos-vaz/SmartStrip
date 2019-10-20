@@ -70,9 +70,9 @@ int main() {
 
 void ADC_Init()
 {
-	// Set  ADC Enable bit (7) in ADCSRA register, and set ADC prescaler to 128
+	// Set  ADC Enable bit (7) in ADCSRA register, and set ADC prescaler to 64
 	// 0b10000111 
-	ADCSRA = 1<<ADEN | 1<<ADPS2|1<<ADPS1|1<<ADPS0; 
+	ADCSRA = 1<<ADEN | 1<<ADPS2|1<<ADPS1|0<<ADPS0; 
 	// AVCC with external capacitor at AREF pin + use ADC0 + use right justify
 	// 0b01000000
 	ADMUX = 0<<REFS1|1<<REFS0|0<<ADLAR;
@@ -95,63 +95,88 @@ int getSample() {
 	int peakCnt = 0;
 
 
-	/*Sample device CS at 3kHz for 0.5s*/
+	//Sample device CS at 3kHz for 256 samples
 	int i;
 	for (i=0; i<SAMPLES; i++) {
 		
+		//Get sample from ADC
 		rawData[i] = sampleADC();
 
 
-		/*Make all samples positive (512-1024)*/
+		//Make all samples positive (512-1024)
 		if (rawData[i]<512) {
 			rawData[i] = 1024 - rawData[i];
 		}
 
-		/*Shift values to range 0-512*/
+		//Shift values to range 0-512
 		rawData[i] = rawData[i] - 512;
 
 		if (i >= WINDOW - 1) {
+			
 			// Overwrite raw data array with filtered (mean) data
 			int k;
 			float avg = 0;
+			
+			//Sum
 			for(k=0; k<WINDOW; k++) {
-				avg += (float)rawData[i-k] / WINDOW;
+				avg += (float)rawData[i-k];
 			}
-
+			
+			//Divide
+			avg = avg/WINDOW;
+		
+			//Overwrite raw data array with average
 			filteredData[i-WINDOW+1] = (int) avg;
+		}
+
+
+		//Delay - See window vs. delay table
+		_delay_us(15);
+	
+		//Toggle GPIO on every 5 samples
+		//For fs = 3000Hz, GPIO should be at 300Hz
+		if ((i%5) == 0) {
+			PORTB = ~PORTB; // Toggle GPIO
 		}
 	}
 
+
 	int extendedPeak = 0;
 
-	/*Find peaks in sample array - move through array, find elements that end a zeros (previously negative section), then find max. values between each zeros section*/
-	for(i=FIND_PEAKS_HALF_WINDOW; i<SAMPLES-FIND_PEAKS_HALF_WINDOW; i++) {
+	//Find peaks in sample array - move through array, find elements that end a zeros (previously negative section), then find max. values between each zeros section
+	for(i=FIND_PEAKS_HALF_WINDOW-1; i<SAMPLES-FIND_PEAKS_HALF_WINDOW-WINDOW; i++) {
 
 		int k, max = 0;
-		// Find max around window center (excluding center point)
+
+		// Find max around window center
 		for(k=-1*FIND_PEAKS_HALF_WINDOW; k<=FIND_PEAKS_HALF_WINDOW; k++) {
-			if(k != 0 && rawData[i+k] > max)
-				max = rawData[i+k];
+			if(filteredData[i+k] > max) {
+				max = filteredData[i+k];
+			}	
 		}
 
-		// check if center is strictly greater than surrounding window
-		if(rawData[i] > max) {
+		// Check if point = max
+		if(filteredData[i] == max) {
+			peaks[peakCnt++] = filteredData[i];
 			extendedPeak = rawData[i];
-			peaks[peakCnt++] = rawData[i];
 		}
 
 		extendedPeaks[i] = extendedPeak;
 
-		if(peakCnt == MAXPEAKS)
+		if(peakCnt == MAXPEAKS) {
 			break;
+		}
 	}
 
 	float sample = 0;
 
 	// Average all peaks
 	for(i=0; i<peakCnt; i++) {
-		sample += (float) peaks[i] / peakCnt;
+		sample += (float) peaks[i];
 	}
+
+	sample = sample/peakCnt;
+
 
 	for(i=0; i<SAMPLES; i++) {
 		final[i] = (int) sample;
