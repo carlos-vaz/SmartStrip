@@ -18,9 +18,9 @@
 #define BAUDCOUNTER 51
 
 typedef struct thresh {
-	int val;	
-	int offval;
-	int onval;
+	uint16_t val;	
+	uint16_t offval;
+	uint16_t onval;
 	uint16_t onCount;
 	uint16_t offCount;
 } thresh_t;
@@ -485,22 +485,34 @@ command_t parseCommand()
 	switch (btRxBuffer[0])
 	{
 		case 's':
-
+			ret.op = 's';
+			ret.outlet = (unsigned char)btRxBuffer[1];
+			ret.threshold.val = (uint16_t)btRxBuffer[2];
+			ret.threshold.onval = (uint16_t)btRxBuffer[4];
+			ret.threshold.offval = (uint16_t)btRxBuffer[6];
+			ret.threshold.onCount = (uint16_t)btRxBuffer[8];
+			ret.threshold.offCount = (uint16_t)btRxBuffer[10];
 			break;
-
 		case 't':
-			
+			ret.op = 't';
+			ret.outlet = (unsigned char)btRxBuffer[1];
+			ret.threshold.val = (uint16_t)btRxBuffer[2];
+			ret.threshold.onval = (uint16_t)btRxBuffer[4];
+			ret.threshold.offval = (uint16_t)btRxBuffer[6];
+			ret.threshold.onCount = (uint16_t)btRxBuffer[8];
+			ret.threshold.offCount = (uint16_t)btRxBuffer[10];
 			break;
-
 		case 'm':
-			
+			ret.op = 'm';
+			ret.mode = (unsigned char)btRxBuffer[1];
 			break;
 
 		case 'o':
-			
+			ret.op = 'o';
+			ret.mask = (unsigned char)btRxBuffer[1];
+			ret.duration = (unsigned char)btRxBuffer[2];
 			break;
 	}
-
 
 	return ret;
 }
