@@ -19,6 +19,8 @@
 
 typedef struct thresh {
 	int val;	
+	int offval;
+	int onval;
 	uint16_t onCount;
 	uint16_t offCount;
 } thresh_t;
@@ -57,6 +59,7 @@ void allOn();
 void manualControl(int device, uint8_t en, uint8_t on);
 void recordTeachIn(int device, int state);
 void teachInToggle(int device);
+void updateGPIO();
 
 // ADC functions
 void adcConfig();
@@ -78,11 +81,14 @@ void clearBuf();
 
 device_t Devices[6];	// Device EEPROM states 
 char relayState;
+char ledState;
 char teachIn;	//Teach-in enable(1)/disable(0)
 
 #define LOOP_COUNT_SHUTOFF 100
+#define FLASH_COUNT 500
 
 int all_on_iter = 0; // counts the loop iterations to determine when to shut off relays (after allOn())
+int flash_iter = 0; //Counts the loop iterations to determine when to toggle flashing LEDs
 
 #define RSSI_THRESH = -65;
 
@@ -110,6 +116,17 @@ int main(void)
 	/*Load state from EEPROM*/
 	cli();	// disable interrupts to avoid corruption
 	sei();	// re-enable interrupts
+	
+	
+	/*GPIO Setup Stuff*/
+		// Define Port C I/O Pins as Outputs for Relays and Set to 0
+		DDRC |= 0b11111111;
+		PORTC = 0b00000000;
+	
+		// Define Port D I/O Pins as Outputs for LEDs and Set to 0
+		DDRD |= 0b11111111;
+		PORTD = 0b00000000;
+	
 	
 	/*ADC Setup Stuff*/
 	adcConfig();
@@ -185,26 +202,40 @@ int main(void)
 			char update_mask = 0;
 			int i;
 			for(i=0; i<6; i++) {
+				
+				//Check if relay is currently on
 				if (relayState & (1<<i)) {
+					
+					//Get a sample
 					uint16_t sample = getSample(i);
+					
+					//If device is off and control enabled, open relay
 					if (sample < Devices[i].threshold.val && Devices[i].algo_enable==1) {
 						update_mask |= (1<<i);
 					}
 				}
 			}
+			
+			//Move not(mask) to relayState
 			relayState &= ~update_mask;
 		}
 
-		/*Update relay and LED GPIO states based on relayState*/
+		//Every so many
+		if (flash_iter = FLASH_COUNT){
+			//If relay closed, turn on LED
+			//If device in teach-in, flash LED
+			ledState = (relayState & !teachIn) | (teachIn & !ledState);
 			
-		/*ledState = relayState;
-		PORTX = relayState &= 0x3f;
-		PORTY = ledState & 0x3f;*/
+			flash_iter = 0;
+		}
+				
+		updateGPIO();
+		
 	}
 }
 
 
-/* FUNCTIONS */
+////////////////////////////////////////////// FUNCTIONS //////////////////////////////////////////////
 
 
 /*Toggle teach-in mode of selected outlet*/
@@ -219,25 +250,34 @@ void recordTeachIn(int device, int state) {
 	
 	/*OFF sample*/
 	if (state == 0) {
-		/*If sample is LT all ON samples, update threshold and offCount*/
+		//If sample is LT all ON samples, update average off current
 		if (sample < Devices[device].minOn) {
 			Devices[device].threshold.offCount++;
-			Devices[device].threshold.val += (float)(sample*Devices[device].threshold.offCount-1)/Devices[device].threshold.offCount;
-			if(sample > Devices[device].maxOff)
+			Devices[device].threshold.offval += (float)(sample*Devices[device].threshold.offCount-1)/Devices[device].threshold.offCount;
+			
+			if(sample > Devices[device].maxOff) {
 				Devices[device].maxOff = sample;
+			}
+			
 		}
 	}
 
 	/*ON sample*/
 	else {
-		/*If sample is GT all OFF samples, update threshold and onCount*/
+		//If sample is GT all OFF samples, update average on current
 		if (sample > Devices[device].maxOff) {
 			Devices[device].threshold.onCount++;
-			Devices[device].threshold.val += (float)(sample*Devices[device].threshold.onCount-1)/Devices[device].threshold.onCount;
-			if(sample < Devices[device].minOn)
+			Devices[device].threshold.onval += (float)(sample*Devices[device].threshold.onCount-1)/Devices[device].threshold.onCount;
+			
+			if(sample < Devices[device].minOn) {
 				Devices[device].minOn = sample;
+			}
+			
 		}
 	}
+	
+	//Update current off/on threshold
+	Devices[device].threshold.val = (Devices[device].threshold.offval + Devices[device].threshold.onval)/2;
 
 
 	/*Check device status - if device has at least 3 off and 3 on samples, status = 1*/
@@ -248,6 +288,15 @@ void recordTeachIn(int device, int state) {
 		Devices[device].suff_ex = 0;
 	}
 }
+
+/* Update GPIO Output Pins */
+void updateGPIO () {
+	
+	PORTC = relayState;
+	PORTD = ledState;	
+	
+}
+
 
 /*Manual control of devices*/
 void manualControl(int device, uint8_t en, uint8_t on) {
@@ -282,8 +331,8 @@ void adcConfig() {
 	DDRA= 0x00; //Set port A to inputs (from ADC)  
 	
 	//Initialize A/D Conversion
-	ADCSRA = 1<<ADEN | 1<<ADPS2|0<<ADPS1|1<<ADPS0; // 0x87 // 0b10000111 // Set  ADC Enable bit (7) in ADCSRA register, and set ADC prescaler to 128
-	ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR; //0x60; // 0b01100000  // select Analog  Reference voltage to be AVcc and use right justify
+	ADCSRA = 1<<ADEN | 1<<ADPS2|0<<ADPS1|1<<ADPS0; // 0x87 // 0b10000111 // Set  ADC Enable bit (7) in ADCSRA register, and set ADC prescaler to 128
+	ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR; //0x60; // 0b01100000  // select Analog  Reference voltage to be AVcc and use right justify
 }
 
 // Must be called from within getSample(), which selects the channel before calling this!
@@ -292,7 +341,7 @@ uint16_t sampleADC() {
 	uint8_t  Current2;
 	uint16_t  Current;
 
-	ADCSRA|=(1<<ADSC); // Start conversion 
+	ADCSRA|=(1<<ADSC); // Start conversion 
 	while ((ADCSRA & (1<<ADIF))==0); // wait for completion
 	Current2=ADCL;
 	Current1=ADCH;
@@ -319,13 +368,13 @@ int getSample(int device) {
 	// Select ADC Channel based on device
 	switch(device)
 	{
-		//ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR;// select Analog  Reference voltage to be AVcc and use right justify
-		case 1: ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR|0<<MUX3|0<<MUX2|0<<MUX1|0<<MUX0;// 0b01100000
-		case 2: ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR|0<<MUX3|0<<MUX2|0<<MUX1|1<<MUX0;// 0b01100001
-		case 3: ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR|0<<MUX3|0<<MUX2|1<<MUX1|0<<MUX0;// 0b01100010
-		case 4: ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR|0<<MUX3|1<<MUX2|0<<MUX1|0<<MUX0;// 0b01100100
-		case 5: ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR|0<<MUX3|1<<MUX2|0<<MUX1|1<<MUX0;// 0b01100101
-		case 6: ADMUX=0<<REFS1|1<<REFS0|0<<ADLAR|0<<MUX3|1<<MUX2|1<<MUX1|0<<MUX0;// 0b01100110
+		//Set MUX selectors to choose ADC to sample from
+		case 1: 0<<MUX3|0<<MUX2|0<<MUX1|0<<MUX0;// 0b01100000
+		case 2: 0<<MUX3|0<<MUX2|0<<MUX1|1<<MUX0;// 0b01100001
+		case 3: 0<<MUX3|0<<MUX2|1<<MUX1|0<<MUX0;// 0b01100010
+		case 4: 0<<MUX3|1<<MUX2|0<<MUX1|0<<MUX0;// 0b01100100
+		case 5: 0<<MUX3|1<<MUX2|0<<MUX1|1<<MUX0;// 0b01100101
+		case 6: 0<<MUX3|1<<MUX2|1<<MUX1|0<<MUX0;// 0b01100110
 	}
 
 
