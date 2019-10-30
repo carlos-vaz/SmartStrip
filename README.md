@@ -1,2 +1,2 @@
 # SmartStrip
-The strip that's smart
+A power strip with the intelligence of a large moth
