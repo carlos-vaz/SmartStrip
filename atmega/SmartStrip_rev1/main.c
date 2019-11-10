@@ -58,7 +58,7 @@ typedef struct command { 	//	| STORE	|     TEACH 	|      MODE	|   OVERRIDE	|
 int getSample(int);
 void allOn();
 void manualControl(int device, uint8_t en, uint8_t on);
-void recordTeachIn(int device, int state);
+int recordTeachIn(int device, int state);
 void teachInToggle(int device);
 void updateGPIO();
 
@@ -132,18 +132,32 @@ int main(void)
 	/*ADC Setup Stuff*/
 	adcConfig();
 
-	
 	/*BLE Setup Stuff*/
 	bluetoothConfig();
+	
+		/*Serial Setup Stuff*/
+	UART_Init(BAUDCOUNTER);
+	new_msg_flag = 0;
 
-	/* LOOP */
+	//Define device max. off = 0, min. on = 1024
+	int i;
+	for (i=0; i<6; i++){
+		Devices[i].maxOff = 0;
+		Devices[i].minOn = 1024;
+	}
+
+	//////////////////////////////////* LOOP *////////////////////////////////////////////////////
 	while (1) 
 	{
 		/*Check Bluetooth Message Buffer*/
 		if(new_msg_flag) {
 			_delay_ms(100); // allow some time in case RX buffer is still filling up
-
+			
+			//Parse Serial buffer contents into cmd struct
 			command_t cmd = parseCommand(btRxBuffer);
+			
+			clearBuf();
+			new_msg_flag = 0;
 
 			if(cmd.op == 's')
 			{
@@ -151,24 +165,58 @@ int main(void)
 			}
 			else if(cmd.op == 't')
 			{
-				// TEACH command
+				// TEACH command - toggle device teach-in mode on/off
+				teachInToggle((int) cmd.outlet);
+				
+				//Return status
+				if(teachIn & (1<<cmd.outlet)) {
+					Serial_Send("Teach-In On!\n\n");
+					}
+				else {
+					Serial_Send("Teach-In Off!\n\n");
+				}
 				
 			}
 			else if(cmd.op == 'm')
 			{
-				// MODE command
-				
+				// MODE command - get device teach-in sample, indicating on or off
+				//Check if outlet is in teach-in mode
+				if(teachIn) {
+					int outlet = (int) log(teachIn)/log(2);
+					int sample = 0;
+					//Get teach in - send device/outlet and mode (0 = Off, 1 = On)
+					sample = recordTeachIn(outlet, (int)cmd.mode);
+					
+					//OK
+					Serial_Send("Teach-In Recorded: mode = ");
+					UART_TX(cmd.mode + 48);
+					Serial_Send("\n");
+					
+					//Send updated device info.
+					char str[6];
+					int2str(sample, str);
+					Serial_Send("Sample: ");
+					Serial_Send(str);
+					int2str(Devices[outlet].threshold.val, str);
+					Serial_Send(", Threshold Value: ");
+					Serial_Send(str);
+					int2str(Devices[outlet].threshold.onCount, str);
+					Serial_Send(", onCount = ");
+					Serial_Send(str);
+					int2str(Devices[outlet].threshold.offCount, str);
+					Serial_Send(", offCount = ");
+					Serial_Send(str);
+					Serial_Send("\n\n\n");
+				}
+
 			}
 			else if(cmd.op == 'o')
 			{
 				// OVERRIDE command
 				
 			}
-
-
-			clearBuf();
-			new_msg_flag = 0;
 		}
+		
 		
 
 		/*Get RSSI strength and set trigger if necessary*/
@@ -222,7 +270,7 @@ int main(void)
 		}
 
 		//Every so many
-		if (flash_iter = FLASH_COUNT){
+		if (flash_iter == FLASH_COUNT){
 			//If relay closed, turn on LED
 			//If device in teach-in, flash LED
 			ledState = (relayState & !teachIn) | (teachIn & !ledState);
@@ -245,7 +293,7 @@ void teachInToggle(int device) {
 }
 
 /*Take sample, classify, refresh threshold, and update counts*/
-void recordTeachIn(int device, int state) {
+int recordTeachIn(int device, int state) {
 	
 	int sample = getSample(device);
 	
@@ -288,6 +336,7 @@ void recordTeachIn(int device, int state) {
 	else {
 		Devices[device].suff_ex = 0;
 	}
+	return sample;
 }
 
 /* Update GPIO Output Pins */
@@ -313,19 +362,6 @@ void allOn() {
 		relayMask |= (Devices[i].manual_enable << i);
 	}
 	relayState |= ~relayMask;
-}
-
-int max(int array[]) {
-	int length = sizeof(array);
-	int max = array[0];
-	int i;
-
-	for (i=1; i<length; i++){
-		if (array[i] > max) {
-			max = array[i];
-		}
-	}
-	return max;
 }
 
 void adcConfig() {
@@ -370,12 +406,12 @@ int getSample(int device) {
 	switch(device)
 	{
 		//Set MUX selectors to choose ADC to sample from
-		case 1: 0<<MUX3|0<<MUX2|0<<MUX1|0<<MUX0;// 0b01100000
-		case 2: 0<<MUX3|0<<MUX2|0<<MUX1|1<<MUX0;// 0b01100001
-		case 3: 0<<MUX3|0<<MUX2|1<<MUX1|0<<MUX0;// 0b01100010
-		case 4: 0<<MUX3|1<<MUX2|0<<MUX1|0<<MUX0;// 0b01100100
-		case 5: 0<<MUX3|1<<MUX2|0<<MUX1|1<<MUX0;// 0b01100101
-		case 6: 0<<MUX3|1<<MUX2|1<<MUX1|0<<MUX0;// 0b01100110
+		case 1: ADMUX= 0<<MUX3|0<<MUX2|0<<MUX1|0<<MUX0;// 0b01100000
+		case 2: ADMUX= 0<<MUX3|0<<MUX2|0<<MUX1|1<<MUX0;// 0b01100001
+		case 3: ADMUX= 0<<MUX3|0<<MUX2|1<<MUX1|0<<MUX0;// 0b01100010
+		case 4: ADMUX= 0<<MUX3|1<<MUX2|0<<MUX1|0<<MUX0;// 0b01100100
+		case 5: ADMUX= 0<<MUX3|1<<MUX2|0<<MUX1|1<<MUX0;// 0b01100101
+		case 6: ADMUX= 0<<MUX3|1<<MUX2|1<<MUX1|0<<MUX0;// 0b01100110
 	}
 
 
@@ -577,7 +613,8 @@ unsigned char UART_RX(void)
 	return UDR0;
 }
 
-int equals(char a[], const char b[]) {
+int equals(char a[], const char b[]) 
+{
 	int i = 0;
 	while(1) {
 		if(a[i] != b[i] || i > 256) 
@@ -588,11 +625,11 @@ int equals(char a[], const char b[]) {
 	}
 }
 
-void clearBuf()
+void clearBuf() 
 {
 	buff_i = 0;
 	int i;
-	for(i=0; i<RX_BUFF_SIZE; i++)
+	for(i=0; i<RX_BUFF_SIZE; i++) {
 		btRxBuffer[i] = 0;
+	}		
 }
-
