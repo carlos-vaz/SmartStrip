@@ -52,18 +52,17 @@ typedef volatile struct device {
 } device_t;
 	
 // COMMAND struct - used for parsing Bluetooth messages (up to 20B). Messages are parsed based on type (Byte 0) according to the
-//					table below - see parseCommand()
-							// 	 _______________________________________
-typedef struct command { 	//	| STORE	|   TEACH	| MODE	| OVERRIDE	| 
-	char op;				//	|---------------------------------------|
-	unsigned char outlet;	//	|   X	|	  X		|		| 			|	// X = normal field
-	thresh_t threshold;		//	|   X	|	  X		|  (R)	|			|	// (R) = response field
-	unsigned char mode;		//	|		|	  X		| 	X	| 			|
-	unsigned char mask;		//	|		|			| 		|	  X		|
-	unsigned char duration;	//	|		|			| 		|	  X		|
-	unsigned char stop;		//	|		|			|  (R)	|			|
-	unsigned char ok;		//	|  (R)	|    (R)	|		|    (R)	|
-							// 	 ---------------------------------------
+// table below - see parseCommand()
+
+typedef struct command { 	 
+	char op;		
+	unsigned char outlet;	
+	thresh_t threshold;		
+	unsigned char mode;	
+	unsigned char mask;
+	unsigned char duration;	
+	unsigned char stop; 
+	unsigned char ok;
 } command_t;
 
 
