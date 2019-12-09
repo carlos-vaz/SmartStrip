@@ -1,0 +1,453 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/topLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:onClick="onBackgroundClick"
+    tools:context=".MainActivity">
+
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/outletInfoLayout"
+        android:layout_width="217dp"
+        android:layout_height="429dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="50dp"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <Button
+            android:id="@+id/offButton"
+            android:layout_width="80dp"
+            android:layout_height="50dp"
+            android:onClick="onOffButtonClick"
+            android:text="Off"
+            app:layout_constraintBottom_toBottomOf="@+id/teachButton"
+            app:layout_constraintEnd_toEndOf="@+id/onButton"
+            app:layout_constraintStart_toStartOf="@+id/smartButton" />
+
+        <Button
+            android:id="@+id/onButton"
+            android:layout_width="80dp"
+            android:layout_height="50dp"
+            android:onClick="onOnButtonClick"
+            android:text="On"
+            app:layout_constraintBottom_toTopOf="@+id/offButton"
+            app:layout_constraintEnd_toEndOf="@+id/smartButton"
+            app:layout_constraintStart_toStartOf="@+id/smartButton"
+            app:layout_constraintTop_toBottomOf="@+id/smartButton" />
+
+        <TextView
+            android:id="@+id/thresholdValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintBottom_toBottomOf="@+id/staticThresholdLabel"
+            app:layout_constraintStart_toStartOf="@+id/onoffCountTextView"
+            app:layout_constraintTop_toTopOf="@+id/staticThresholdLabel"
+            app:layout_constraintVertical_bias="1.0" />
+
+        <TextView
+            android:id="@+id/staticThresholdLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:text="Threshold:"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/staticOutletLabel" />
+
+        <TextView
+            android:id="@+id/deviceName"
+            android:layout_width="169dp"
+            android:layout_height="59dp"
+            android:textSize="30sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/staticOutletLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="32dp"
+            android:text="Outlet: "
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/deviceName" />
+
+        <TextView
+            android:id="@+id/outletNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintBottom_toBottomOf="@+id/staticOutletLabel"
+            app:layout_constraintStart_toStartOf="@+id/thresholdValue"
+            app:layout_constraintTop_toTopOf="@+id/staticOutletLabel"
+            app:layout_constraintVertical_bias="1.0" />
+
+        <TextView
+            android:id="@+id/staticwhatever"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:text="On/Off Count:"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/staticThresholdLabel" />
+
+        <TextView
+            android:id="@+id/onoffCountTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintStart_toEndOf="@+id/staticwhatever"
+            app:layout_constraintTop_toTopOf="@+id/staticwhatever" />
+
+        <Button
+            android:id="@+id/smartButton"
+            android:layout_width="80dp"
+            android:layout_height="50dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="35dp"
+            android:onClick="onSmartButtonClick"
+            android:text="Smart"
+            app:layout_constraintStart_toEndOf="@+id/teachButton"
+            app:layout_constraintTop_toBottomOf="@+id/staticwhatever" />
+
+        <Button
+            android:id="@+id/teachButton"
+            android:layout_width="116dp"
+            android:layout_height="156dp"
+            android:layout_marginStart="8dp"
+            android:onClick="onTeachInButton"
+            android:text="teach"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/smartButton" />
+
+        <ImageButton
+            android:id="@+id/addDeviceButton"
+            android:layout_width="37dp"
+            android:layout_height="41dp"
+            android:background="#00FFFFFF"
+            android:onClick="onAddDeviceButton"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/deviceName"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/plus" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/swapActionLayout"
+        android:layout_width="219dp"
+        android:layout_height="382dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="56dp"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/swapDev2Label"
+            android:layout_width="146dp"
+            android:layout_height="25dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="16dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/swapDev1Label" />
+
+        <TextView
+            android:id="@+id/swapActionTitle"
+            android:layout_width="203dp"
+            android:layout_height="59dp"
+            android:textSize="30sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Swap Outlets" />
+
+        <Button
+            android:id="@+id/swapButton"
+            android:layout_width="122dp"
+            android:layout_height="80dp"
+            android:layout_marginStart="35dp"
+            android:layout_marginTop="24dp"
+            android:onClick="onSwapButtonClick"
+            android:text="swap"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/swapDev2Label" />
+
+        <TextView
+            android:id="@+id/swapDev1Label"
+            android:layout_width="146dp"
+            android:layout_height="25dp"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="24dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/swapActionTitle" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/stripLayout"
+        android:layout_width="103dp"
+        android:layout_height="475dp"
+        android:layout_marginTop="24dp"
+        android:visibility="visible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.57"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <Button
+            android:id="@+id/outlet3button"
+            android:layout_width="60dp"
+            android:layout_height="37dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="15dp"
+            android:layout_marginEnd="8dp"
+            android:background="@android:color/transparent"
+            android:onClick="onOutlet3ButtonClick"
+            android:visibility="visible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/outlet2button" />
+
+        <Button
+            android:id="@+id/outlet1button"
+            android:layout_width="60dp"
+            android:layout_height="37dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="75dp"
+            android:layout_marginEnd="8dp"
+            android:background="@android:color/transparent"
+            android:onClick="onOutlet1ButtonClick"
+            android:visibility="visible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/smartstripImage" />
+
+        <Button
+            android:id="@+id/outlet2button"
+            android:layout_width="60dp"
+            android:layout_height="37dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="15dp"
+            android:layout_marginEnd="8dp"
+            android:background="@android:color/transparent"
+            android:onClick="onOutlet2ButtonClick"
+            android:visibility="visible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/outlet1button" />
+
+        <Button
+            android:id="@+id/outlet5button"
+            android:layout_width="60dp"
+            android:layout_height="37dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="15dp"
+            android:layout_marginEnd="8dp"
+            android:background="@android:color/transparent"
+            android:onClick="onOutlet5ButtonClick"
+            android:visibility="visible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/outlet4button" />
+
+        <ImageView
+            android:id="@+id/smartstripImage"
+            android:layout_width="81dp"
+            android:layout_height="441dp"
+            android:contentDescription="@string/smartstrip_icon"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/strip" />
+
+        <ImageView
+            android:id="@+id/circle5"
+            android:layout_width="50dp"
+            android:layout_height="45dp"
+            android:layout_marginStart="37dp"
+            android:layout_marginTop="6dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/circle4"
+            app:srcCompat="@drawable/greencircle"
+            tools:visibility="invisible" />
+
+        <ImageView
+            android:id="@+id/circle6"
+            android:layout_width="50dp"
+            android:layout_height="45dp"
+            android:layout_marginStart="37dp"
+            android:layout_marginTop="5dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/circle5"
+            app:srcCompat="@drawable/greencircle"
+            tools:visibility="invisible" />
+
+        <ImageView
+            android:id="@+id/circle3"
+            android:layout_width="50dp"
+            android:layout_height="45dp"
+            android:layout_marginStart="37dp"
+            android:layout_marginTop="5dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/circle2"
+            app:srcCompat="@drawable/greencircle"
+            tools:visibility="invisible" />
+
+        <ImageView
+            android:id="@+id/circle2"
+            android:layout_width="50dp"
+            android:layout_height="45dp"
+            android:layout_marginStart="37dp"
+            android:layout_marginTop="5dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/circle1"
+            app:srcCompat="@drawable/greencircle"
+            tools:visibility="invisible" />
+
+        <Button
+            android:id="@+id/outlet4button"
+            android:layout_width="60dp"
+            android:layout_height="37dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="15dp"
+            android:layout_marginEnd="8dp"
+            android:background="@android:color/transparent"
+            android:onClick="onOutlet4ButtonClick"
+            android:visibility="visible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/outlet3button" />
+
+        <ImageView
+            android:id="@+id/circle4"
+            android:layout_width="50dp"
+            android:layout_height="45dp"
+            android:layout_marginStart="37dp"
+            android:layout_marginTop="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/circle3"
+            app:srcCompat="@drawable/greencircle"
+            tools:visibility="invisible" />
+
+        <Button
+            android:id="@+id/outlet6button"
+            android:layout_width="60dp"
+            android:layout_height="37dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="15dp"
+            android:layout_marginEnd="8dp"
+            android:background="@android:color/transparent"
+            android:onClick="onOutlet6ButtonClick"
+            android:visibility="visible"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/outlet5button" />
+
+        <ImageView
+            android:id="@+id/circle1"
+            android:layout_width="50dp"
+            android:layout_height="45dp"
+            android:layout_marginStart="37dp"
+            android:layout_marginTop="90dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/greencircle"
+            tools:visibility="invisible" />
+
+        <TextView
+            android:id="@+id/outlet1Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="85dp"
+            android:text="1"
+            app:layout_constraintStart_toStartOf="@+id/smartstripImage"
+            app:layout_constraintTop_toTopOf="@+id/smartstripImage" />
+
+        <TextView
+            android:id="@+id/outlet2Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="32dp"
+            android:text="2"
+            app:layout_constraintStart_toStartOf="@+id/smartstripImage"
+            app:layout_constraintTop_toBottomOf="@+id/outlet1Label" />
+
+        <TextView
+            android:id="@+id/outlet3Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="33dp"
+            android:text="3"
+            app:layout_constraintStart_toStartOf="@+id/smartstripImage"
+            app:layout_constraintTop_toBottomOf="@+id/outlet2Label" />
+
+        <TextView
+            android:id="@+id/outlet4Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="32dp"
+            android:text="4"
+            app:layout_constraintStart_toStartOf="@+id/smartstripImage"
+            app:layout_constraintTop_toBottomOf="@+id/outlet3Label" />
+
+        <TextView
+            android:id="@+id/outlet5Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="30dp"
+            android:text="5"
+            app:layout_constraintStart_toStartOf="@+id/smartstripImage"
+            app:layout_constraintTop_toBottomOf="@+id/outlet4Label" />
+
+        <TextView
+            android:id="@+id/outlet6Label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="33dp"
+            android:text="6"
+            app:layout_constraintStart_toStartOf="@+id/smartstripImage"
+            app:layout_constraintTop_toBottomOf="@+id/outlet5Label" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <Button
+        android:id="@+id/button3"
+        android:layout_width="80dp"
+        android:layout_height="48dp"
+        android:onClick="onDebugButton"
+        android:text="debug"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

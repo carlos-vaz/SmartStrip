@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".TeachInActivity">
+
+    <Button
+        android:id="@+id/onSampleButton"
+        android:layout_width="0dp"
+        android:layout_height="300dp"
+        android:background="#4CAF50"
+        android:onClick="onOnSampleButton"
+        android:text="On sample"
+        app:layout_constraintBottom_toTopOf="@+id/finishButton"
+        app:layout_constraintEnd_toStartOf="@+id/offSampleButton"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/offSampleButton"
+        android:layout_width="175dp"
+        android:layout_height="300dp"
+        android:background="#F44336"
+        android:onClick="onOffSampleButton"
+        android:text="Off Sample"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/onSampleButton" />
+
+    <Button
+        android:id="@+id/finishButton"
+        android:layout_width="0dp"
+        android:layout_height="100dp"
+        android:onClick="onFinishButton"
+        android:text="Finish"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/onSampleButton" />
+
+    <TextView
+        android:id="@+id/textView6"
+        android:layout_width="204dp"
+        android:layout_height="46dp"
+        android:text="Teach-In Mode"
+        android:textSize="30sp"
+        app:layout_constraintBottom_toTopOf="@+id/onSampleButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

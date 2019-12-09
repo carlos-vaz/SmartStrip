@@ -1,0 +1,2 @@
+include ':app'
+rootProject.name='SmartStripV1.0'
